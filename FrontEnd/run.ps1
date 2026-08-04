@@ -12,6 +12,6 @@ Start-Sleep -Seconds 3
 # 3. Start Streamlit Frontend in the main terminal window
 cd "$projectDir\backend"
 Set-ExecutionPolicy Unrestricted -Scope Process
-.\venv\Scripts\Activate.ps1
+..\venv\Scripts\Activate.ps1
 cd "$projectDir"
 streamlit run FrontEnd/abc.py

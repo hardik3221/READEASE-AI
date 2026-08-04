@@ -2,7 +2,7 @@ import streamlit as st
 import sqlite3
 import base64
 import os
-import requests  # Added for FastAPI integration
+import requests  
 
 # Backend URL pointing to your running FastAPI server
 BACKEND_URL = "http://127.0.0.1:8000"
@@ -43,16 +43,117 @@ border_color = "#2D303E"
 
 dynamic_css = f"""
 <style>
+/* Hide Streamlit Deploy Artifacts */
+#MainMenu {{visibility: hidden;}}
+header {{visibility: hidden;}}
+footer {{visibility: hidden;}}
+
+/* --- ENABLE SMOOTH SCROLLING FOR STREAMLIT CONTAINERS --- */
+html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMainContainer"], [data-testid="stMain"] {{
+    scroll-behavior: smooth !important;
+}}
+
 @font-face {{
     font-family: 'OpenDyslexic';
     src: url('https://cdn.jsdelivr.net/gh/antijingoist/opendyslexic@master/compiled/OpenDyslexic-Regular.otf') format('opentype');
     font-weight: normal;
     font-style: normal;
 }}
+
 .stApp {{ background-color: {bg_color}; }}
 
-html, body, [class*="css"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, label {{
+/* --- TYPOGRAPHY HIERARCHY FIX --- */
+/* 1. Clean UI Font for body, headers, and Hero text (reverted to sleek SaaS look) */
+html, body, [class*="css"], p, li, label, .stMarkdown, h1, h2, h3, h4, h5, h6, .nav-title {{
+    font-family: 'Inter', 'Segoe UI', sans-serif !important;
+    color: {text_color} !important;
+}}
+
+h1, h2, h3, h4, h5, h6, .nav-title {{
+    font-weight: 700 !important;
+}}
+
+.hero-text-light, .hero-text-cyan {{
+    font-family: 'Inter', 'Segoe UI', sans-serif !important;
+}}
+
+/* 2. Force OpenDyslexic specifically on the Accessible Reading Panes ONLY */
+.reading-pane, .reading-pane p, .reading-pane strong, .reading-pane div {{
     font-family: 'OpenDyslexic', sans-serif !important;
+    font-size: 1.1rem !important;
+    line-height: 1.8 !important;
+    color: {text_color} !important;
+}}
+
+/* 3. Keep Standard Font for the standard web text demo */
+.standard-pane, .standard-pane p, .standard-pane strong, .standard-pane div {{
+    font-family: 'Arial', sans-serif !important;
+    font-size: 1rem !important;
+    color: #787B86 !important;
+}}
+
+
+/* --- CUSTOM TOP NAVBAR --- */
+.custom-navbar {{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(19, 23, 31, 0.85);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 50px;
+    z-index: 99999;
+    border-bottom: 1px solid {border_color};
+}}
+.nav-left {{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}}
+.nav-logo {{
+    width: 36px;
+    height: 36px; 
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid {cyan_color};
+}}
+.nav-title {{
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: {text_color};
+    letter-spacing: 1px;
+}}
+.nav-login-btn {{
+    background-color: transparent;
+    color: {text_color};
+    border: 1px solid {cyan_color};
+    padding: 6px 20px;
+    border-radius: 25px;
+    text-decoration: none !important;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}}
+.nav-login-btn:hover {{
+    background-color: {cyan_color};
+    color: #0E1117;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+}}
+
+/* Custom Primary Button Styling */
+button[kind="primary"] {{
+    background-color: {cyan_color} !important;
+    color: #0E1117 !important;
+    border: none !important;
+    font-weight: bold !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}}
+button[kind="primary"]:hover {{
+    background-color: {accent_color} !important;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 229, 255, 0.2);
 }}
 
 @keyframes fadeUp {{
@@ -60,9 +161,9 @@ html, body, [class*="css"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, label {{
     100% {{ opacity: 1; transform: translateY(0); }}
 }}
 
-/* Interactive Background Animation for the Top Space */
 .hero-wrapper {{ 
-    padding: 3rem 0 4rem 0; 
+    padding: 3rem 0 2rem 0; 
+    margin-top: 60px;
     text-align: center; 
     animation: fadeUp 1s ease-out;
     position: relative;
@@ -90,39 +191,47 @@ html, body, [class*="css"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, label {{
 .text-accent {{ color: {accent_color} !important; }}
 
 .reading-pane {{
-    background-color: {card_color}; color: {text_color} !important; padding: 30px;
+    background-color: {card_color}; padding: 30px;
     border-radius: 12px; box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
     border: 1px solid {border_color}; transition: all 0.3s ease;
 }}
 
-/* New Mega Footer Styling */
+.standard-pane {{
+    background-color: #12141A; padding: 30px;
+    border-radius: 12px; border: 1px solid #1E212B;
+}}
+
 .mega-footer {{
-    display: flex;
-    justify-content: space-around;
-    background-color: #13171F;
-    padding: 40px 20px;
-    border-top: 1px solid {border_color};
-    margin-top: 60px;
-    border-radius: 12px;
+    display: flex; justify-content: space-around; background-color: #13171F;
+    padding: 40px 20px; border-top: 1px solid {border_color};
+    margin-top: 60px; border-radius: 12px;
 }}
 .footer-col {{ display: flex; flex-direction: column; text-align: left; }}
-.footer-col h4 {{ color: #FFFFFF !important; font-size: 1.1rem; margin-bottom: 15px; font-weight: bold; }}
+.footer-col h4 {{ color: #FFFFFF !important; font-size: 1.1rem; margin-bottom: 15px; font-weight: bold; font-family: sans-serif !important;}}
 .footer-col a {{ color: #9AA0A6 !important; text-decoration: none; font-size: 0.9rem; margin-bottom: 10px; transition: color 0.2s, transform 0.2s; }}
 .footer-col a:hover {{ color: {cyan_color} !important; transform: translateX(5px); }}
-
-.stButton > button {{ transition: transform 0.2s ease, box-shadow 0.2s ease; }}
-.stButton > button:hover {{ transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0, 229, 255, 0.15); }}
-.stTextInput input {{ color: {text_color} !important; }}
 </style>
 """
 st.markdown(dynamic_css, unsafe_allow_html=True)
 
 if not st.session_state.logged_in:
-    if logo_b64:
-        st.markdown(f'<div style="text-align: center;"><img src="data:image/jpeg;base64,{logo_b64}" width="250" style="border-radius: 15px; border: 1px solid #2D303E; margin-bottom: 20px;"></div>', unsafe_allow_html=True)
-    else:
-        st.error("Logo file not found. Ensure 'logo readora ai.jpeg' is in the same folder.")
 
+    # --- TOP NAVBAR INJECTION ---
+    logo_src = f"data:image/jpeg;base64,{logo_b64}" if logo_b64 else "https://via.placeholder.com/45"
+    navbar_html = f"""
+    <div class="custom-navbar">
+        <div class="nav-left">
+            <img src="{logo_src}" class="nav-logo" alt="Logo">
+            <span class="nav-title">Readora AI</span>
+        </div>
+        <div>
+            <a href="#login-section" class="nav-login-btn">Log In</a>
+        </div>
+    </div>
+    """
+    st.markdown(navbar_html, unsafe_allow_html=True)
+
+    # --- HERO SECTION ---
     hero_html = """
     <div class="hero-wrapper">
         <div class="hero-text-light">Your Brain Isn't Behind the AI Curve.</div>
@@ -130,39 +239,80 @@ if not st.session_state.logged_in:
     </div>
     """
     st.markdown(hero_html, unsafe_allow_html=True)
+    
+    # CTA Button
+    _, btn_col, _ = st.columns([1.5, 1, 1.5])
+    with btn_col:
+        st.markdown('<a href="#login-section" style="text-decoration: none;"><button style="width: 100%; background-color: #00E5FF; color: #0E1117; border: none; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;">🚀 Get Started & Try Live Demo</button></a>', unsafe_allow_html=True)
+    
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # --- INTERACTIVE BEFORE & AFTER DEMO ---
+    st.markdown("<h3 style='text-align: center; color: #E0E0E0;'>Experience the Difference</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #9AA0A6; margin-bottom: 30px;'>See how Readora AI transforms rigid, academic text into sensory-friendly, accessible formats.</p>", unsafe_allow_html=True)
+    
+    demo_col1, demo_col2 = st.columns(2)
+    with demo_col1:
+        st.markdown("""
+        <div class='standard-pane'>
+            <strong>Standard Web Text</strong><br><br>
+            Photosynthesis is a process used by plants and other organisms to convert light energy into chemical energy that, through cellular respiration, can later be released to fuel the organism's activities. This chemical energy is stored in carbohydrate molecules, such as sugars and starches, which are synthesized from carbon dioxide and water.
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with demo_col2:
+        st.markdown("""
+        <div class='reading-pane'>
+            <strong>Readora AI (Simplified & OpenDyslexic)</strong><br><br>
+            Plants use sunlight to make their own food.<br><br>They turn the light into energy and store it as sugar. Later, they use this sugar to grow and stay alive.
+        </div>
+        """, unsafe_allow_html=True)
+
     st.markdown("---")
 
-    col_about, col_login = st.columns(2)
+    # --- ABOUT US / FEATURES SECTION ---
+    st.markdown("<h2 style='text-align: center; margin-bottom: 30px;'>Built for Neurodivergent Minds</h2>", unsafe_allow_html=True)
     
+    col_about, col_features = st.columns(2)
     with col_about:
-        st.subheader("About Us")
-        st.write("We are Mayank Joshi and [Teammate Name], developers from NSUT CSAI building accessible tech for neurodivergent minds.")
-        st.write("### Features")
-        st.write("- 📄 **Dyslexia-Friendly UI:** Open-Dyslexic font and sensory-friendly dark mode.")
-        st.write("- ✨ **Text Simplification:** AI that breaks down complex paragraphs.")
-        st.write("- 🔊 **Read Aloud:** Audio conversion for sensory processing ease.")
+        st.subheader("Our Mission")
+        st.write("We are Mayank Joshi and the UI engineering team from NSUT CSAI. We are building accessible tech designed *with* neurodivergent users, not just *for* them.")
+        st.write("Most tools force students to adapt to rigid technology. Our AI adapts to the student, offering a safe space to process complex information without sensory overload.")
+        
+    with col_features:
+        st.subheader("Core Features")
+        st.write("- 📄 **Dyslexia-Friendly UI:** Open-Dyslexic font and sensory-friendly dark mode overlays.")
+        st.write("- ✨ **Text Simplification:** Advanced AI that breaks down complex, abstract paragraphs into digestible concepts.")
+        st.write("- 🔊 **Read Aloud (Coming Soon):** Audio conversion for seamless sensory processing.")
+        
+    st.markdown("---")
 
-    with col_login:
-        st.subheader("Access the App")
+    # --- DEDICATED AUTHENTICATION SECTION ---
+    st.markdown('<div id="login-section" style="padding-top: 70px; margin-top: -70px;"></div>', unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; margin-bottom: 20px;'>Access the App</h2>", unsafe_allow_html=True)
+    
+    _, auth_col, _ = st.columns([1, 1.5, 1])
+    with auth_col:
         log_user = st.text_input("Username")
         log_pass = st.text_input("Password", type="password")
         
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("Log In", use_container_width=True):
+            if st.button("Log In", type="primary", use_container_width=True):
                 c.execute('SELECT * FROM users WHERE username=? AND password=?', (log_user, log_pass))
                 if c.fetchone():
                     st.session_state.logged_in = True
                     st.rerun()
                 else:
-                    st.error("Invalid credentials")
+                    st.toast("Invalid credentials. Please try again.", icon="🚨")
         with c2:
             if st.button("Sign Up", use_container_width=True):
                 if log_user and log_pass:
                     c.execute('INSERT INTO users VALUES (?, ?)', (log_user, log_pass))
                     conn.commit()
-                    st.success("Account created! You can now log in.")
+                    st.toast("Account created! You can now log in.", icon="✅")
 
+    # --- MEGA FOOTER ---
     footer_html = """
     <div class="mega-footer">
         <div class="footer-col">
@@ -196,6 +346,7 @@ if not st.session_state.logged_in:
     </div>
     """
     st.markdown(footer_html, unsafe_allow_html=True)
+
 else:
     st.sidebar.button("Log Out", on_click=lambda: st.session_state.update(logged_in=False))
     
@@ -230,7 +381,7 @@ else:
     col1, col2, col3 = st.columns([1, 1, 2])
 
     with col1:
-        btn_simplify = st.button("✨ Simplify Text", use_container_width=True)
+        btn_simplify = st.button("✨ Simplify Text", type="primary", use_container_width=True)
     with col2:
         btn_read = st.button("🔊 Read Aloud", use_container_width=True)
 
@@ -268,5 +419,6 @@ else:
 
     st.markdown(
         f'<div class="reading-pane" style="{custom_text_style}">{display_text}</div>', 
-        unsafe_allow_html=True
+
+       unsafe_allow_html=True
     )
