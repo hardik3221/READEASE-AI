@@ -12,7 +12,7 @@ def get_image_base64(img_path):
     return ""
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-logo_path = os.path.join(current_dir, "logo readora ai.png")
+logo_path = os.path.join(current_dir, "logo readora ai.jpeg")
 logo_b64 = get_image_base64(logo_path)
 
 conn = sqlite3.connect('users.db', check_same_thread=False)
@@ -42,9 +42,6 @@ dynamic_css = f"""
 
 html, body, [class*="css"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, label {{
     font-family: 'OpenDyslexic', sans-serif !important;
-}}
-.stMarkdown, p, h1, h2, h3, h4, h5, h6, label {{
-    color: {text_color} !important;
 }}
 
 @keyframes fadeUp {{
@@ -111,9 +108,9 @@ st.markdown(dynamic_css, unsafe_allow_html=True)
 
 if not st.session_state.logged_in:
     if logo_b64:
-        st.markdown(f'<div style="text-align: center;"><img src="data:image/png;base64,{logo_b64}" width="250" style="border-radius: 15px; border: 1px solid #2D303E; margin-bottom: 20px;"></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align: center;"><img src="data:image/jpeg;base64,{logo_b64}" width="250" style="border-radius: 15px; border: 1px solid #2D303E; margin-bottom: 20px;"></div>', unsafe_allow_html=True)
     else:
-        st.error("Logo file not found. Ensure 'logo readora ai.png' is in the same folder.")
+        st.error("Logo file not found. Ensure 'logo readora ai.jpeg' is in the same folder.")
 
     hero_html = """
     <div class="hero-wrapper">
