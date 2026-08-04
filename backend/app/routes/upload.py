@@ -1,23 +1,27 @@
-from fastapi import APIRouter, UploadFile, File
-import shutil
-
-from app.services.pdf_service import extract_text_from_pdf
-
+# app/routes/upload.py
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from app.services.pdf_service import extract_text_from_pdf_bytes
 
 router = APIRouter()
 
-
 @router.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
 
-    file_path = f"temp_{file.filename}"
+    try:
+        pdf_bytes = await file.read()
+        text = extract_text_from_pdf_bytes(pdf_bytes)
+        
+        if not text:
+            raise HTTPException(
+                status_code=400, 
+                detail="Could not extract text. The PDF might be scanned or image-only."
+            )
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    text = extract_text_from_pdf(file_path)
-
-    return {
-        "filename": file.filename,
-        "text": text
-    }
+        return {
+            "filename": file.filename,
+            "text": text
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process PDF: {str(e)}")
