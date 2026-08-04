@@ -2,6 +2,10 @@ import streamlit as st
 import sqlite3
 import base64
 import os
+import requests  # Added for FastAPI integration
+
+# Backend URL pointing to your running FastAPI server
+BACKEND_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(page_title="Readora AI", page_icon="📚", layout="wide")
 
@@ -20,8 +24,15 @@ c = conn.cursor()
 c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)')
 conn.commit()
 
+# Session state initialization
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
+
+if 'extracted_text' not in st.session_state:
+    st.session_state.extracted_text = ""
+
+if 'simplified_text' not in st.session_state:
+    st.session_state.simplified_text = ""
 
 bg_color = "#0E1117"
 text_color = "#E0E0E0"
@@ -197,6 +208,25 @@ else:
 
     uploaded_file = st.file_uploader("Drop your reading material here (PDF)", type=['pdf'])
 
+    # --- FASTAPI BACKEND INTEGRATION 1: AUTOMATIC PDF EXTRACTION ---
+    if uploaded_file is not None:
+        if st.session_state.get('last_uploaded_file') != uploaded_file.name:
+            with st.spinner("Extracting text from PDF via FastAPI..."):
+                try:
+                    files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
+                    response = requests.post(f"{BACKEND_URL}/upload", files=files)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        st.session_state.extracted_text = data.get("text", "")
+                        st.session_state.last_uploaded_file = uploaded_file.name
+                        st.session_state.simplified_text = ""  # Reset simplified text for new upload
+                        st.success("PDF processed successfully!")
+                    else:
+                        st.error(f"Upload Error: {response.json().get('detail')}")
+                except Exception as e:
+                    st.error(f"Connection Error: Could not connect to FastAPI backend on {BACKEND_URL}")
+
     col1, col2, col3 = st.columns([1, 1, 2])
 
     with col1:
@@ -204,9 +234,39 @@ else:
     with col2:
         btn_read = st.button("🔊 Read Aloud", use_container_width=True)
 
+    # --- FASTAPI BACKEND INTEGRATION 2: AI SIMPLIFICATION ---
+    if btn_simplify:
+        if st.session_state.extracted_text:
+            with st.spinner("Simplifying text using Groq AI..."):
+                try:
+                    payload = {"text": st.session_state.extracted_text}
+                    response = requests.post(f"{BACKEND_URL}/simplify", json=payload)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        st.session_state.simplified_text = data.get("simplified_text", "")
+                        st.success("Text simplified!")
+                    else:
+                        st.error(f"Simplification Error: {response.json().get('detail')}")
+                except Exception as e:
+                    st.error(f"Connection Error: Could not connect to FastAPI backend on {BACKEND_URL}")
+        else:
+            st.warning("Please upload a PDF document first!")
+
     st.markdown("---")
     st.subheader("Reading Area")
 
-    sample_text = "This is a live preview. Use the sidebar settings to adjust the text size and line spacing. Finding the right spacing can make reading much easier."
+    # Display dynamic font controls inside partner's reading-pane class
+    custom_text_style = f"font-size: {font_size}px !important; line-height: {line_spacing} !important;"
 
-    st.markdown(f'<div class="reading-pane">{sample_text}</div>', unsafe_allow_html=True)
+    # Displays simplified text if available, otherwise extracted text, or default helper text
+    display_text = (
+        st.session_state.simplified_text 
+        or st.session_state.extracted_text 
+        or "This is a live preview. Upload a PDF document above to begin reading."
+    )
+
+    st.markdown(
+        f'<div class="reading-pane" style="{custom_text_style}">{display_text}</div>', 
+        unsafe_allow_html=True
+    )
