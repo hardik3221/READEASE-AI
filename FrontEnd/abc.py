@@ -145,10 +145,12 @@ h1, h2, h3, h4, h5, h6, .nav-title {{
 /* Custom Primary Button Styling */
 button[kind="primary"] {{
     background-color: {cyan_color} !important;
-    color: #0E1117 !important;
     border: none !important;
-    font-weight: bold !important;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+}}
+button[kind="primary"], button[kind="primary"] * {{
+    color: #0E1117 !important;
+    font-weight: bold !important;
 }}
 button[kind="primary"]:hover {{
     background-color: {accent_color} !important;
