@@ -5,6 +5,7 @@ import os
 import requests  
 import markdown 
 import json
+import re
 import streamlit.components.v1 as components
 
 # Backend URL pointing to your running FastAPI server
@@ -367,23 +368,24 @@ else:
         btn_simplify = st.button("✨ Simplify Text", type="primary", use_container_width=True)
     with btn_c3:
         btn_read = st.button("🔊 Read Aloud", use_container_width=True)
-        
+    
     if btn_read:
         text_to_read = st.session_state.simplified_text if st.session_state.simplified_text else st.session_state.extracted_text
         if text_to_read:
-            # Clean text for the Javascript engine
+            # 1. Clean Markdown syntax
             clean_text = text_to_read.replace('*', '').replace('#', '')
+            # 2. Strip numbered lists (e.g., "1. ", "12. ") using Regex
+            clean_text = re.sub(r'\b\d+\.\s+', '', clean_text)
+            # 3. Strip bullet points (e.g., "- ")
+            clean_text = clean_text.replace('- ', '')
+
             safe_text = json.dumps(clean_text)
 
             player_html = f"""
             <style>
                 @font-face {{ font-family: 'OpenDyslexic'; src: url('https://cdn.jsdelivr.net/gh/antijingoist/opendyslexic@master/compiled/OpenDyslexic-Regular.otf') format('opentype'); }}
                 body {{ font-family: 'OpenDyslexic', sans-serif; background-color: #1A1C23; color: #E0E0E0; padding: 20px; border-radius: 12px; margin: 0; }}
-                
-                /* THE GLOWING HIGHLIGHT EFFECT */
-                .highlight {{ background-color: #00E5FF; color: #0E1117; font-weight: bold; border-radius: 4px; padding: 2px 4px; box-shadow: 0 0 10px rgba(0,229,255,0.5); transition: all 0.1s ease; }}
-                
-                /* PROGRESS BAR */
+                .highlight {{ background-color: #00E5FF; color: #0E1117; font-weight: bold; border-radius: 4px; padding: 2px 4px; box-shadow: 0 0 10px rgba(0,229,255,0.5); transition: background-color 0.1s ease; }}
                 #progress-container {{ width: 100%; background-color: #2D303E; border-radius: 8px; margin-bottom: 20px; height: 10px; overflow: hidden; }}
                 #progress-bar {{ width: 0%; height: 100%; background-color: #69F0AE; transition: width 0.1s linear; }}
                 .controls {{ margin-bottom: 20px; display: flex; gap: 15px; align-items: center; }}
@@ -393,7 +395,7 @@ else:
             
             <div id="progress-container"><div id="progress-bar"></div></div>
             <div class="controls">
-                <button onclick="stopAudio()">🛑 Stop Reading</button>
+                <button id="play-pause-btn" onclick="togglePlayPause()">⏸️ Pause Reading</button>
                 <span id="status" style="color: #69F0AE; font-weight: bold;">🔊 Speaking...</span>
             </div>
             <div id="text-display" style="font-size: 22px; line-height: 1.8;"></div>
@@ -403,34 +405,31 @@ else:
                 const display = document.getElementById("text-display");
                 const progressBar = document.getElementById("progress-bar");
                 const status = document.getElementById("status");
+                const playPauseBtn = document.getElementById("play-pause-btn");
 
-                // Split text into words (keeping spaces intact for rendering)
                 const words = rawText.split(/(\\s+)/); 
                 display.innerHTML = words.map((w, i) => `<span id="word-${{i}}">${{w}}</span>`).join('');
 
+                const synth = window.parent.speechSynthesis || window.speechSynthesis;
+                synth.cancel(); // Stop anything currently playing from a previous click
+
                 let msg = new SpeechSynthesisUtterance(rawText);
                 msg.lang = 'en-US';
-                msg.rate = 0.9; // Slightly slower for neurodivergent accessibility
+                msg.rate = 0.9; 
 
                 msg.onboundary = (event) => {{
                     if(event.name === 'word') {{
-                        // 1. Update Progress Bar
                         const pct = (event.charIndex / rawText.length) * 100;
                         progressBar.style.width = pct + "%";
 
-                        // 2. Map the audio character index to the exact HTML word span
                         let charCount = 0;
                         for (let i = 0; i < words.length; i++) {{
                             charCount += words[i].length;
                             if (charCount > event.charIndex) {{
-                                // Remove old highlights
                                 document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-                                // Add glowing highlight to current word
                                 const activeWord = document.getElementById(`word-${{i}}`);
                                 if(activeWord && activeWord.innerText.trim().length > 0) {{
                                     activeWord.classList.add('highlight');
-                                    // Auto-scroll the box so the reader never loses their place
-                                    activeWord.scrollIntoView({{behavior: "smooth", block: "center"}});
                                 }}
                                 break;
                             }}
@@ -441,17 +440,22 @@ else:
                 msg.onend = () => {{
                     progressBar.style.width = "100%";
                     status.innerText = "✅ Finished";
+                    playPauseBtn.style.display = "none"; // Hides the button when done
                     document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
                 }};
 
-                // Start audio
-                window.speechSynthesis.cancel();
-                window.speechSynthesis.speak(msg);
+                synth.speak(msg);
 
-                function stopAudio() {{
-                    window.speechSynthesis.cancel();
-                    status.innerText = "⏹️ Stopped";
-                    document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+                function togglePlayPause() {{
+                    if (synth.paused) {{
+                        synth.resume();
+                        playPauseBtn.innerText = "⏸️ Pause Reading";
+                        status.innerText = "🔊 Speaking...";
+                    }} else if (synth.speaking) {{
+                        synth.pause();
+                        playPauseBtn.innerText = "▶️ Resume Reading";
+                        status.innerText = "⏸️ Paused";
+                    }}
                 }}
             </script>
             """

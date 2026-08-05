@@ -1,4 +1,3 @@
-# app/routes/simplify.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
@@ -11,17 +10,19 @@ class TextRequest(BaseModel):
     level: Optional[str] = "medium"
 
 @router.post("/simplify")
-def simplify(request: TextRequest):
+async def simplify(request: TextRequest): # Added async
     try:
-        result = simplify_text(request.text, level=request.level)
+        # Added await
+        result = await simplify_text(request.text, level=request.level) 
         return {"simplified_text": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/vocabulary")
-def vocabulary(request: TextRequest):
+async def vocabulary(request: TextRequest): # Added async
     try:
-        result = extract_vocabulary(request.text)
+        # Added await
+        result = await extract_vocabulary(request.text) 
         return {"vocabulary": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import upload, simplify
 
-
 app = FastAPI(
     title="ReadEase AI Backend"
 )
@@ -17,13 +16,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 app.include_router(upload.router)
 app.include_router(simplify.router)
 
-
+# Made this async!
 @app.get("/")
-def home():
+async def home():
     return {
         "message": "ReadEase AI Backend Running"
     }
