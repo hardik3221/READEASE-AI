@@ -195,20 +195,118 @@ button[kind="primary"]:hover {{
 """
 st.markdown(dynamic_css, unsafe_allow_html=True)
 
-if not st.session_state.logged_in:
-    navbar_html = f"""
-    <div class="custom-navbar">
-        <div class="nav-left">
-            <img src="{logo_src}" class="nav-logo" alt="Logo">
-            <span class="nav-title">Readora AI</span>
-        </div>
-        <div>
-            <a href="#login-section" class="nav-login-btn">Log In</a>
-        </div>
-    </div>
-    """
-    st.markdown(navbar_html, unsafe_allow_html=True)
 
+if not st.session_state.logged_in:
+    st.markdown(f"""
+        <style>
+            #smooth-logo-bg {{
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                /* Lighter dark gradient overlay so the logo background is crisp and clear */
+                background: linear-gradient(rgba(14, 17, 23, 0.72), rgba(14, 17, 23, 0.82)), url('{logo_src}');
+                background-size: cover;
+                background-position: center;
+                pointer-events: none;
+                z-index: 0;
+                opacity: 0.85; /* Increased opacity to make it pop out more */
+                transition: opacity 0.8s ease-in-out;
+            }}
+            #smooth-logo-bg.hidden-bg {{
+                opacity: 0 !important;
+            }}
+        </style>
+        
+        <div id="smooth-logo-bg"></div>
+        
+        <script>
+            (function() {{
+                const bgDiv = document.getElementById("smooth-logo-bg");
+                const targetWin = window.parent !== window ? window.parent : window;
+                
+                function handleScroll() {{
+                    const scrollPos = targetWin.scrollY || window.scrollY || document.documentElement.scrollTop || 0;
+                    if (bgDiv) {{
+                        if (scrollPos > 40) {{
+                            bgDiv.classList.add("hidden-bg");
+                        }} else {{
+                            bgDiv.classList.remove("hidden-bg");
+                        }}
+                    }}
+                }}
+                
+                targetWin.addEventListener('scroll', handleScroll, {{ passive: true }});
+                window.addEventListener('scroll', handleScroll, {{ passive: true }});
+                
+                // Run once on load
+                handleScroll();
+            }})();
+        </script>
+    """, unsafe_allow_html=True)
+
+    # 2. Render your clean, semi-transparent top bar
+    top_bar_container = st.container()
+    with top_bar_container:
+        st.markdown(f"""
+            <style>
+                .custom-top-bar {{
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 80px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 0 50px;
+                    background-color: rgba(14, 17, 23, 0.45);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    border-bottom: 1px solid rgba(45, 48, 62, 0.3);
+                    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+                    z-index: 999999;
+                }}
+                .nav-left-side {{
+                    display: flex;
+                    align-items: center;
+                }}
+                .nav-brand-title {{
+                    font-size: 2.2rem;
+                    font-weight: 900;
+                    letter-spacing: 1px;
+                    background: linear-gradient(135deg, #FFFFFF 30%, #00E5FF 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }}
+                .nav-login-link {{
+                    background-color: transparent;
+                    color: #00E5FF !important;
+                    border: 1.5px solid #00E5FF;
+                    padding: 8px 24px;
+                    border-radius: 25px;
+                    text-decoration: none !important;
+                    font-size: 1rem;
+                    font-weight: bold;
+                    transition: all 0.25s ease;
+                }}
+                .nav-login-link:hover {{
+                    background-color: #00E5FF;
+                    color: #0E1117 !important;
+                    box-shadow: 0 0 18px rgba(0, 229, 255, 0.5);
+                    transform: translateY(-2px);
+                }}
+            </style>
+            <div class="custom-top-bar">
+                <div class="nav-left-side">
+                    <span class="nav-brand-title">Readora AI</span>
+                </div>
+                <div>
+                    <a href="#login-section" class="nav-login-link">Log In</a>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
     hero_html = """
     <div class="hero-wrapper">
         <div class="hero-text-light">Your Brain Isn't Behind the AI Curve.</div>
@@ -224,7 +322,6 @@ if not st.session_state.logged_in:
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center; color: #E0E0E0;'>Experience the Difference</h3>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #9AA0A6; margin-bottom: 30px;'>See how Readora AI transforms rigid, academic text into sensory-friendly, accessible formats.</p>", unsafe_allow_html=True)
-    
     demo_col1, demo_col2 = st.columns(2)
     with demo_col1:
         st.markdown("""
@@ -429,28 +526,34 @@ else:
 
     if uploaded_file is not None:
         if st.session_state.get('last_uploaded_file') != uploaded_file.name:
-            with st.spinner("Extracting text from PDF via FastAPI..."):
-                try:
-                    files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
-                    response = requests.post(f"{BACKEND_URL}/upload", files=files)
+            status_placeholder = st.empty()
+            status_placeholder.info("⏳ Extracting text from PDF via FastAPI...")
+            
+            try:
+                files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
+                
+                status_placeholder.warning("⏳ Processing document... This is taking slightly longer than usual due to file size or complexity.")
+                
+                response = requests.post(f"{BACKEND_URL}/upload", files=files)
+                status_placeholder.empty()
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    st.session_state.extracted_text = data.get("text", "")
+                    st.session_state.last_uploaded_file = uploaded_file.name
+                    st.session_state.simplified_text = ""
+                    st.session_state.vocabulary = "" # Reset until simplify is clicked
                     
-                    if response.status_code == 200:
-                        data = response.json()
-                        st.session_state.extracted_text = data.get("text", data.get("content", ""))
-                        st.session_state.vocabulary = data.get("vocabulary", "")
-                        st.session_state.last_uploaded_file = uploaded_file.name
-                        st.session_state.simplified_text = ""
-                        
-                        c.execute("INSERT INTO documents (username, doc_name, original_text, simplified_text) VALUES (?, ?, ?, ?)", 
-                                  (st.session_state.username, uploaded_file.name, st.session_state.extracted_text, ""))
-                        conn.commit()
-                        st.session_state.current_doc_id = c.lastrowid 
-                        st.success("PDF processed and saved to history!")
-                    else:
-                        st.error(f"Upload Error: {response.json().get('detail')}")
-                except Exception as e:
-                    st.error(f"Connection Error: Could not connect to FastAPI backend on {BACKEND_URL}")
-
+                    c.execute("INSERT INTO documents (username, doc_name, original_text, simplified_text) VALUES (?, ?, ?, ?)", 
+                            (st.session_state.username, uploaded_file.name, st.session_state.extracted_text, ""))
+                    conn.commit()
+                    st.session_state.current_doc_id = c.lastrowid 
+                    st.success("PDF processed and saved to history!")
+                else:
+                    st.error(f"Upload Error: {response.json().get('detail')}")
+            except Exception as e:
+                status_placeholder.empty()
+                st.error(f"Connection Error: Could not connect to FastAPI backend on {BACKEND_URL}")
     st.markdown("<br>", unsafe_allow_html=True)
     btn_c1, btn_c2, btn_c3, btn_c4 = st.columns([1, 1, 1, 1])
     with btn_c2:
