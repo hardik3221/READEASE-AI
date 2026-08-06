@@ -1,28 +1,26 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 from app.services.ai_service import simplify_text, extract_vocabulary
 
 router = APIRouter()
 
-class TextRequest(BaseModel):
+class SimplifyPayload(BaseModel):
     text: str
-    level: Optional[str] = "medium"
+    level: str = "medium"
 
 @router.post("/simplify")
-async def simplify(request: TextRequest): # Added async
+async def simplify_endpoint(payload: SimplifyPayload):
     try:
-        # Added await
-        result = await simplify_text(request.text, level=request.level) 
-        return {"simplified_text": result}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/vocabulary")
-async def vocabulary(request: TextRequest): # Added async
-    try:
-        # Added await
-        result = await extract_vocabulary(request.text) 
-        return {"vocabulary": result}
+        # 1. Run the summarization
+        simplified = await simplify_text(payload.text)
+        
+        # 2. Run the real vocabulary extraction
+        vocab = await extract_vocabulary(payload.text)
+        
+        # 3. Return both to the frontend
+        return {
+            "simplified_text": simplified,
+            "vocabulary": vocab
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

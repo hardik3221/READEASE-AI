@@ -6,30 +6,32 @@ import time
 def main():
     print("🚀 Starting Readora AI (Backend + Frontend)...")
 
-    # Get the absolute paths for your directories
     root_dir = os.path.dirname(os.path.abspath(__file__))
     backend_dir = os.path.join(root_dir, "backend")
 
-    # 1. Start the FastAPI Backend
-    # Using sys.executable guarantees it uses your activated virtual environment
+    # Pass backend_dir into PYTHONPATH so 'import app...' works globally
+    env = os.environ.copy()
+    env["PYTHONPATH"] = backend_dir + os.pathsep + env.get("PYTHONPATH", "")
+
+    # 1. Start FastAPI Backend from the backend directory
     backend_cmd = [sys.executable, "-m", "uvicorn", "app.main:app", "--reload"]
     print("-> Launching FastAPI Backend on port 8000...")
-    backend_process = subprocess.Popen(backend_cmd, cwd=backend_dir)
+    backend_process = subprocess.Popen(backend_cmd, cwd=backend_dir, env=env)
 
-    # Give the backend 3 seconds to fully boot up
     time.sleep(3)
+    if backend_process.poll() is not None:
+        print("\n❌ FastAPI Backend failed to start. See error above.")
+        sys.exit(1)
 
-    # 2. Start the Streamlit Frontend
+    # 2. Start Streamlit Frontend
     frontend_cmd = [sys.executable, "-m", "streamlit", "run", "FrontEnd/abc.py"]
     print("-> Launching Streamlit Frontend...")
-    frontend_process = subprocess.Popen(frontend_cmd, cwd=root_dir)
+    frontend_process = subprocess.Popen(frontend_cmd, cwd=root_dir, env=env)
 
     try:
-        # Keep the script running to monitor both processes
         backend_process.wait()
         frontend_process.wait()
     except KeyboardInterrupt:
-        # This catches when you press Ctrl+C and gracefully kills both servers
         print("\n🛑 Shutting down Readora AI processes...")
         backend_process.terminate()
         frontend_process.terminate()

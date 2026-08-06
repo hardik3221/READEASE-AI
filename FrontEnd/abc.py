@@ -39,6 +39,8 @@ if 'extracted_text' not in st.session_state:
     st.session_state.extracted_text = ""
 if 'simplified_text' not in st.session_state:
     st.session_state.simplified_text = ""
+if 'vocabulary' not in st.session_state:            
+    st.session_state.vocabulary = ""
 if 'username' not in st.session_state:
     st.session_state.username = ""
 if 'current_doc_id' not in st.session_state:
@@ -435,6 +437,7 @@ else:
                     if response.status_code == 200:
                         data = response.json()
                         st.session_state.extracted_text = data.get("text", data.get("content", ""))
+                        st.session_state.vocabulary = data.get("vocabulary", "")
                         st.session_state.last_uploaded_file = uploaded_file.name
                         st.session_state.simplified_text = ""
                         
@@ -553,21 +556,23 @@ else:
                 try:
                     payload = {"text": st.session_state.extracted_text}
                     response = requests.post(f"{BACKEND_URL}/simplify", json=payload)
-                    
+                
                     if response.status_code == 200:
                         data = response.json()
                         st.session_state.simplified_text = data.get("simplified_text", "")
-                        
+                        st.session_state.vocabulary = data.get("vocabulary", "")  # <-- GET VOCABULARY HERE
+                    
                         if st.session_state.current_doc_id:
                             c.execute("UPDATE documents SET simplified_text = ? WHERE id = ?", 
-                                      (st.session_state.simplified_text, st.session_state.current_doc_id))
+                                  (st.session_state.simplified_text, st.session_state.current_doc_id))
                             conn.commit()
-                            
+                        
                         st.toast("Text simplified and saved to history!", icon="✨")
+                        st.rerun()  # <-- FORCE UI RERUN TO UPDATE TABS IMMEDIATELY
                     else:
                         st.error(f"Simplification Error: {response.json().get('detail')}")
                 except Exception as e:
-                    st.error(f"Connection Error: Could not connect to FastAPI backend on {BACKEND_URL}")
+                        st.error(f"Connection Error: Could not connect to FastAPI backend on {BACKEND_URL}")
         elif uploaded_file is not None:
             st.warning("⚠️ The PDF uploaded, but the backend couldn't extract any words. Check the 'Original PDF Text' tab below to verify it's blank.")
         else:
@@ -586,8 +591,9 @@ else:
     
     custom_text_style = ""
 
-    tab1, tab2 = st.tabs(["✨ AI Simplified", "📄 Original PDF Text"])
+    tab1, tab2, tab3 = st.tabs(["✨ AI Simplified", "📚 Key Vocabulary", "📄 Original PDF Text"])
     
+    # --- Tab 1: AI Simplified ---
     with tab1:
         st.markdown('<div class="reading-container">', unsafe_allow_html=True)
         if st.session_state.simplified_text:
@@ -598,7 +604,19 @@ else:
             st.info("Upload a PDF and click '✨ Simplify Text' to generate a neurodivergent-friendly version.")
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # --- Tab 2: Key Vocabulary ---
     with tab2:
+        st.markdown('<div class="reading-container">', unsafe_allow_html=True)
+        if st.session_state.get('vocabulary'):
+            st.markdown('<div class="badge">Vocabulary List</div>', unsafe_allow_html=True)
+            parsed_vocab_html = markdown.markdown(st.session_state.vocabulary)
+            st.markdown(f'<div class="reading-pane" style="{custom_text_style}">{parsed_vocab_html}</div>', unsafe_allow_html=True)
+        else:
+            st.info("Click '✨ Simplify Text' to generate a vocabulary breakdown.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # --- Tab 3: Original PDF Text ---
+    with tab3:
         st.markdown('<div class="reading-container">', unsafe_allow_html=True)
         if st.session_state.extracted_text:
             st.markdown('<div class="badge">Raw Extraction</div>', unsafe_allow_html=True)
