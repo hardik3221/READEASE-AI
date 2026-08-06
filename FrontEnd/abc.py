@@ -11,7 +11,7 @@ import streamlit.components.v1 as components
 # Backend URL pointing to your running FastAPI server
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
-st.set_page_config(page_title="Readora AI", page_icon="📚", layout="wide")
+st.set_page_config(page_title="Readora AI", page_icon="📚", layout="wide", initial_sidebar_state="expanded")
 
 def get_image_base64(img_path):
     if os.path.exists(img_path):
@@ -29,6 +29,7 @@ logo_src = f"data:image/jpeg;base64,{logo_b64}" if logo_b64 else "https://via.pl
 conn = sqlite3.connect('users.db', check_same_thread=False)
 c = conn.cursor()
 c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)')
+c.execute('CREATE TABLE IF NOT EXISTS documents (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, doc_name TEXT, original_text TEXT, simplified_text TEXT)')
 conn.commit()
 
 # Session state initialization
@@ -38,6 +39,16 @@ if 'extracted_text' not in st.session_state:
     st.session_state.extracted_text = ""
 if 'simplified_text' not in st.session_state:
     st.session_state.simplified_text = ""
+if 'username' not in st.session_state:
+    st.session_state.username = ""
+if 'current_doc_id' not in st.session_state:
+    st.session_state.current_doc_id = None
+if 'profile_photo' not in st.session_state:
+    st.session_state.profile_photo = None
+if 'font_size' not in st.session_state:
+    st.session_state.font_size = 22
+if 'line_spacing' not in st.session_state:
+    st.session_state.line_spacing = 1.8
 
 bg_color = "#0E1117"
 text_color = "#E0E0E0"
@@ -48,10 +59,8 @@ border_color = "#2D303E"
 
 dynamic_css = f"""
 <style>
-/* Hide Streamlit Deploy Artifacts but keep sidebar toggle */
+/* Clean minimal hiding, leaves the sidebar toggle completely untouched */
 #MainMenu {{visibility: hidden !important;}}
-header {{background-color: transparent !important;}}
-[data-testid="stToolbar"] {{visibility: hidden !important;}}
 footer {{visibility: hidden !important;}}
 
 /* --- ENABLE SMOOTH SCROLLING FOR STREAMLIT CONTAINERS --- */
@@ -126,6 +135,28 @@ button[kind="primary"]:hover {{
 }}
 
 /* --- GEMINI STYLE SIDEBAR UI --- */
+/* --- MAGIC LOGO SIDEBAR TOGGLE --- */
+/* Hides the default Streamlit expand arrow */
+[data-testid="collapsedControl"] svg {{
+    display: none !important;
+}}
+/* Replaces it with the Readora logo */
+[data-testid="collapsedControl"] {{
+    background-image: url('{logo_src}');
+    background-size: cover;
+    background-position: center;
+    border-radius: 50%;
+    width: 36px !important;
+    height: 36px !important;
+    border: 2px solid {cyan_color};
+    margin-top: 10px;
+    margin-left: 15px;
+    transition: transform 0.2s ease;
+    z-index: 999999 !important;
+}}
+[data-testid="collapsedControl"]:hover {{
+    transform: scale(1.1);
+}}
 [data-testid="stSidebar"] {{ background-color: #13151C !important; border-right: 1px solid {border_color}; }}
 [data-testid="stSidebar"] button[kind="secondary"] {{
     background-color: transparent !important; border: none !important; justify-content: flex-start !important; 
@@ -241,6 +272,7 @@ if not st.session_state.logged_in:
                 c.execute('SELECT * FROM users WHERE username=? AND password=?', (log_user, log_pass))
                 if c.fetchone():
                     st.session_state.logged_in = True
+                    st.session_state.username = log_user
                     st.rerun()
                 else:
                     st.toast("Invalid credentials. Please try again.", icon="🚨")
@@ -250,6 +282,11 @@ if not st.session_state.logged_in:
                     c.execute('INSERT INTO users VALUES (?, ?)', (log_user, log_pass))
                     conn.commit()
                     st.toast("Account created! You can now log in.", icon="✅")
+        
+        st.markdown("<div style='text-align: center; margin: 20px 0; color: #5A5E73; font-size: 0.9rem;'>OR</div>", unsafe_allow_html=True)
+        
+        if st.button("🌐 Continue with Google", use_container_width=True):
+            st.toast("Google OAuth integration coming soon!", icon="ℹ️")
 
     footer_html = """
     <div class="mega-footer">
@@ -287,58 +324,102 @@ if not st.session_state.logged_in:
 
 else:
     with st.sidebar:
-        # 1. Gemini Logo Style Top Area
-        st.markdown(f"""
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px; margin-top: -20px;">
-                <img src="{logo_src}" width="32" style="border-radius: 50%; border: 2px solid {cyan_color};">
-                <span style="font-size: 1.2rem; font-weight: bold; color: {text_color};">Readora AI</span>
-            </div>
+        st.markdown("""
+        <style>
+            div[data-testid="stPopoverBody"] {
+                background-color: rgba(26, 28, 35, 0.70) !important;
+                backdrop-filter: blur(15px);
+                border: 1px solid #2D303E;
+                border-radius: 12px;
+            }
+        </style>
         """, unsafe_allow_html=True)
 
-        # 2. Main Action Buttons
+        st.text_input("Search", placeholder="🔍 Search...", label_visibility="collapsed")
+        
         if st.button("📝 New chat", use_container_width=True):
             st.session_state.extracted_text = ""
             st.session_state.simplified_text = ""
             st.session_state.last_uploaded_file = None
+            st.session_state.current_doc_id = None 
             st.rerun()
             
-        st.text_input("🔍 Search chats", placeholder="Search chats...", label_visibility="collapsed")
+        st.markdown("<br><span style='color: #787B86; font-size: 0.85rem; font-weight: 600;'>Recents</span>", unsafe_allow_html=True)
+        c.execute("SELECT id, doc_name, original_text, simplified_text FROM documents WHERE username=? ORDER BY id DESC", (st.session_state.username,))
+        user_history = c.fetchall()
         
-        # 3. Accessibility Controls 
-        st.markdown("<br><span style='color: #787B86; font-size: 0.85rem; font-weight: 600;'>Visual Settings</span>", unsafe_allow_html=True)
-        font_size = st.slider("Font Size", 14, 48, 22)
-        line_spacing = st.slider("Line Spacing", 1.0, 4.0, 1.8, step=0.1)
+        if not user_history:
+            st.markdown("<span style='color: #5A5E73; font-size: 0.85rem;'>No documents yet.</span>", unsafe_allow_html=True)
+        else:
+            for doc in user_history:
+                doc_id, doc_name, orig_text, simp_text = doc
+                display_name = (doc_name[:22] + '...') if len(doc_name) > 22 else doc_name
+                if st.button(f"📄 {display_name}", key=f"hist_{doc_id}", use_container_width=True):
+                    st.session_state.current_doc_id = doc_id
+                    st.session_state.last_uploaded_file = doc_name
+                    st.session_state.extracted_text = orig_text
+                    st.session_state.simplified_text = simp_text
+                    st.rerun()
+                    
+        st.markdown("<hr style='margin: 15px 0; border-color: #2D303E;'>", unsafe_allow_html=True)
+        st.markdown("<span style='color: #787B86; font-size: 0.85rem; font-weight: 600;'>Visual Settings</span>", unsafe_allow_html=True)
+        st.session_state.font_size = st.slider("Font Size", 14, 48, st.session_state.get('font_size', 22))
+        st.session_state.line_spacing = st.slider("Line Spacing", 1.0, 4.0, st.session_state.get('line_spacing', 1.8), step=0.1)
 
-        # 4. Recent History Section
-        st.markdown("<br><span style='color: #787B86; font-size: 0.85rem; font-weight: 600;'>Recent</span>", unsafe_allow_html=True)
-        st.button("💬 Setting Up Hackathon Frontend D...", use_container_width=True)
-        st.button("💬 AI Co-Pilot for Web Game Hackath...", use_container_width=True)
-        st.button("💬 skills", use_container_width=True)
-        st.button("💬 Building a JAC Delhi College Predic...", use_container_width=True)
-        st.button("💬 codeforces", use_container_width=True)
-            
-        # Push user profile to bottom
-        st.markdown("<div style='height: 20vh;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 10vh;'></div>", unsafe_allow_html=True)
         
-        # 5. User Profile Badge (Bottom)
-        st.markdown(f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 15px; border-top: 1px solid #2D303E;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 34px; height: 34px; border-radius: 50%; background-color: {cyan_color}; color: #0E1117; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 16px;">M</div>
-                    <div style="line-height: 1.2;">
-                        <div style="font-weight: 600; color: #FFF; font-size: 14px;">User</div>
-                        <div style="font-size: 12px; color: #9AA0A6;">Pro</div>
+        pop_col, log_col = st.columns([8, 2])
+        with pop_col:
+            with st.popover(f"⚙️ Open Menu & Settings", use_container_width=True):
+                m_tab1, m_tab2 = st.tabs(["👤 Profile", "❓ Help"])
+                
+                with m_tab1:
+                    if st.session_state.get('profile_photo'):
+                        b64_img = base64.b64encode(st.session_state.profile_photo).decode()
+                        st.markdown(f'<img src="data:image/jpeg;base64,{b64_img}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;">', unsafe_allow_html=True)
+                        if st.button("🗑️ Delete Photo", use_container_width=True):
+                            st.session_state.profile_photo = None
+                            st.rerun()
+                    else:
+                        uploaded_img = st.file_uploader("Upload Profile Photo", type=["jpg", "png", "jpeg"])
+                        if uploaded_img:
+                            st.session_state.profile_photo = uploaded_img.getvalue()
+                            st.rerun()
+                            
+                    st.text_input("Name")
+                    st.text_input("Surname")
+                    st.text_area("Preferences for AI", placeholder="E.g., Keep sentences short, I prefer bullets...")
+                    
+                with m_tab2:
+                    st.info("Support: help@readora.ai")
+        
+        with log_col:
+            st.button("🚪", on_click=lambda: st.session_state.update(logged_in=False), use_container_width=True, help="Log Out")
+
+        initial = st.session_state.username[0].upper() if st.session_state.username else "U"
+        
+        if st.session_state.get('profile_photo'):
+            b64_img = base64.b64encode(st.session_state.profile_photo).decode()
+            avatar_html = f'<img src="data:image/jpeg;base64,{b64_img}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">'
+        else:
+            avatar_html = f'<div style="width: 32px; height: 32px; border-radius: 50%; background-color: #D9534F; color: #FFF; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 14px;">{initial}</div>'
+            
+        display_name = st.session_state.username.lower() if st.session_state.username else "user"
+        
+        ava_col, upg_col = st.columns([2.5, 1.5])
+        with ava_col:
+            st.markdown(f"""
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                    {avatar_html}
+                    <div style="line-height: 1.1;">
+                        <div style="font-weight: 500; color: #E0E0E0; font-size: 14px;">{display_name}</div>
+                        <div style="font-size: 12px; color: #9AA0A6;">Free</div>
                     </div>
                 </div>
-            </div>
-        """, unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # Log out under profile
-        st.button("Log Out", on_click=lambda: st.session_state.update(logged_in=False), use_container_width=True)
-
-    st.markdown("<h2 style='text-align: center; color: #00E5FF; margin-top: 20px;'>📚 Readora Workspace</h2>", unsafe_allow_html=True)
-    st.markdown("---")
+            """, unsafe_allow_html=True)
+        with upg_col:
+            st.markdown("<br>", unsafe_allow_html=True) 
+            st.button("Upgrade", use_container_width=True)
 
     upload_col1, upload_col2, upload_col3 = st.columns([1, 2, 1])
     with upload_col2:
@@ -353,10 +434,15 @@ else:
                     
                     if response.status_code == 200:
                         data = response.json()
-                        st.session_state.extracted_text = data.get("text", "")
+                        st.session_state.extracted_text = data.get("text", data.get("content", ""))
                         st.session_state.last_uploaded_file = uploaded_file.name
                         st.session_state.simplified_text = ""
-                        st.success("PDF processed successfully!")
+                        
+                        c.execute("INSERT INTO documents (username, doc_name, original_text, simplified_text) VALUES (?, ?, ?, ?)", 
+                                  (st.session_state.username, uploaded_file.name, st.session_state.extracted_text, ""))
+                        conn.commit()
+                        st.session_state.current_doc_id = c.lastrowid 
+                        st.success("PDF processed and saved to history!")
                     else:
                         st.error(f"Upload Error: {response.json().get('detail')}")
                 except Exception as e:
@@ -372,13 +458,9 @@ else:
     if btn_read:
         text_to_read = st.session_state.simplified_text if st.session_state.simplified_text else st.session_state.extracted_text
         if text_to_read:
-            # 1. Clean Markdown syntax
             clean_text = text_to_read.replace('*', '').replace('#', '')
-            # 2. Strip numbered lists (e.g., "1. ", "12. ") using Regex
             clean_text = re.sub(r'\b\d+\.\s+', '', clean_text)
-            # 3. Strip bullet points (e.g., "- ")
             clean_text = clean_text.replace('- ', '')
-
             safe_text = json.dumps(clean_text)
 
             player_html = f"""
@@ -411,7 +493,7 @@ else:
                 display.innerHTML = words.map((w, i) => `<span id="word-${{i}}">${{w}}</span>`).join('');
 
                 const synth = window.parent.speechSynthesis || window.speechSynthesis;
-                synth.cancel(); // Stop anything currently playing from a previous click
+                synth.cancel();
 
                 let msg = new SpeechSynthesisUtterance(rawText);
                 msg.lang = 'en-US';
@@ -440,7 +522,7 @@ else:
                 msg.onend = () => {{
                     progressBar.style.width = "100%";
                     status.innerText = "✅ Finished";
-                    playPauseBtn.style.display = "none"; // Hides the button when done
+                    playPauseBtn.style.display = "none"; 
                     document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
                 }};
 
@@ -459,8 +541,6 @@ else:
                 }}
             </script>
             """
-            
-            # This renders the interactive player directly into the UI!
             st.markdown("### 🎧 Interactive Reader")
             components.html(player_html, height=400, scrolling=True)
             st.markdown("---")
@@ -468,7 +548,7 @@ else:
             st.warning("Please upload a PDF or generate simplified text first!")
 
     if btn_simplify:
-        if st.session_state.extracted_text:
+        if st.session_state.extracted_text and st.session_state.extracted_text.strip():
             with st.spinner("Readora AI is breaking down complex concepts..."):
                 try:
                     payload = {"text": st.session_state.extracted_text}
@@ -477,17 +557,34 @@ else:
                     if response.status_code == 200:
                         data = response.json()
                         st.session_state.simplified_text = data.get("simplified_text", "")
-                        st.toast("Text successfully simplified!", icon="✨")
+                        
+                        if st.session_state.current_doc_id:
+                            c.execute("UPDATE documents SET simplified_text = ? WHERE id = ?", 
+                                      (st.session_state.simplified_text, st.session_state.current_doc_id))
+                            conn.commit()
+                            
+                        st.toast("Text simplified and saved to history!", icon="✨")
                     else:
                         st.error(f"Simplification Error: {response.json().get('detail')}")
                 except Exception as e:
                     st.error(f"Connection Error: Could not connect to FastAPI backend on {BACKEND_URL}")
+        elif uploaded_file is not None:
+            st.warning("⚠️ The PDF uploaded, but the backend couldn't extract any words. Check the 'Original PDF Text' tab below to verify it's blank.")
         else:
             st.warning("Please upload a PDF document first!")
 
     st.markdown("---")
     
-    custom_text_style = f"font-size: {font_size}px !important; line-height: {line_spacing} !important;"
+    st.markdown(f"""
+    <style>
+        .reading-pane, .reading-pane p, .reading-pane li, .reading-pane span {{
+            font-size: {st.session_state.get('font_size', 22)}px !important;
+            line-height: {st.session_state.get('line_spacing', 1.8)} !important;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
+    
+    custom_text_style = ""
 
     tab1, tab2 = st.tabs(["✨ AI Simplified", "📄 Original PDF Text"])
     
@@ -495,7 +592,6 @@ else:
         st.markdown('<div class="reading-container">', unsafe_allow_html=True)
         if st.session_state.simplified_text:
             st.markdown('<div class="badge">AI Output</div>', unsafe_allow_html=True)
-            # Parse the AI Markdown into native HTML tags before injecting
             parsed_html = markdown.markdown(st.session_state.simplified_text)
             st.markdown(f'<div class="reading-pane" style="{custom_text_style}">{parsed_html}</div>', unsafe_allow_html=True)
         else:
@@ -506,7 +602,6 @@ else:
         st.markdown('<div class="reading-container">', unsafe_allow_html=True)
         if st.session_state.extracted_text:
             st.markdown('<div class="badge">Raw Extraction</div>', unsafe_allow_html=True)
-            # Same parsing applied to standard text just in case
             parsed_raw_html = markdown.markdown(st.session_state.extracted_text)
             st.markdown(f'<div class="reading-pane" style="{custom_text_style}">{parsed_raw_html}</div>', unsafe_allow_html=True)
         else:
