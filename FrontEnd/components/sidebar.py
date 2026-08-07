@@ -97,5 +97,5 @@ def render_sidebar():
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
         with st.expander("🔤 Visual Settings", expanded=False):
-            st.slider("Font Size", 25, 40, key='font_size')
+            st.slider("Font Size", 16, 40, key='font_size')
             st.slider("Line Spacing", 1.0, 4.0, step=0.1, key='line_spacing')
