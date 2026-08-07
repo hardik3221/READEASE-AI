@@ -50,6 +50,8 @@ if 'font_size' not in st.session_state:
     st.session_state.font_size = 22
 if 'line_spacing' not in st.session_state:
     st.session_state.line_spacing = 1.8
+if 'is_reading' not in st.session_state:
+    st.session_state.is_reading = False
 
 # --- DESIGN TOKENS ---------------------------------------------------------
 # Original dark UI palette: near-black background with cyan/mint accents.
@@ -63,10 +65,10 @@ border_color = "#2D303E"
 # Paper tokens — used anywhere the user is actually *reading*, so the
 # product's core transformation (dense text -> calm text) is visible in
 # the UI itself, not just described by it.
-paper_bg = "#0A2317"      # warm cream page
-paper_ink = "#EBE9E7"       # ink on paper
+paper_bg = "#050411"      # warm cream page
+paper_ink = "#FFFEFD"       # ink on paper
 paper_border = "#E4D8B8"    # page edge
-paper_accent = "#00E5FF"    # terracotta — emphasis on paper (contrast-safe)
+paper_accent = "#00E5FF"   # terracotta — emphasis on paper (contrast-safe)
 
 dynamic_css = f"""
 <style>
@@ -92,11 +94,11 @@ html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMainCont
 
 /* --- TYPOGRAPHY: serif display paired with a humanist sans body --- */
 html, body, [class*="css"], p, li, label, .stMarkdown {{
-    font-family: 'Figtree', 'Segoe UI', sans-serif !important;
+    font-family: 'OpenDyslexic', 'Figtree', sans-serif !important;
     color: {text_color} !important;
 }}
 h1, h2, h3, h4, h5, h6, .nav-title, .hero-text-light, .hero-text-cyan {{
-    font-family: 'Fraunces', Georgia, serif !important;
+    font-family: 'OpenDyslexic', 'Fraunces', Georgia, serif !important;
     font-weight: 700 !important;
     color: {text_color} !important;
 }}
@@ -152,13 +154,14 @@ h1, h2, h3, h4, h5, h6, .nav-title, .hero-text-light, .hero-text-cyan {{
 }}
 .reading-pane, .reading-pane p, .reading-pane li, .reading-pane div, .reading-pane span, .reading-pane h1, .reading-pane h2, .reading-pane h3 {{
     font-family: 'OpenDyslexic', sans-serif !important;
-    letter-spacing: normal !important; 
+    letter-spacing: 0.02em !important;
     color: {paper_ink} !important;
 }}
+.reading-pane p, .reading-pane li {{ line-height: 1.85 !important; margin-bottom: 14px !important; }}
 .reading-pane strong, .reading-pane b {{ font-family: 'OpenDyslexic', sans-serif !important; font-weight: 700 !important; color: {paper_accent} !important; }}
 .reading-pane h1, .reading-pane h2, .reading-pane h3 {{ margin-bottom: 20px !important; border-bottom: 1px solid {paper_border}; padding-bottom: 10px; }}
 .reading-container {{ max-width: 900px; margin: 0 auto; }}
-.badge {{ background-color: {border_color}; color: {cyan_color}; padding: 4px 12px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em; margin-bottom: 15px; display: inline-block; font-family: 'Figtree', sans-serif !important; }}
+.badge {{ background-color: {border_color}; color: {cyan_color}; padding: 4px 12px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em; margin-bottom: 15px; display: inline-block; font-family: 'OpenDyslexic', 'Figtree', sans-serif !important; }}
 
 /* --- CUSTOM TOP NAVBAR (legacy / unused variant, kept in sync) --- */
 .custom-navbar {{
@@ -235,24 +238,24 @@ button[kind="primary"]:hover {{
     margin-top: 60px; border-radius: 12px;
 }}
 .footer-col {{ display: flex; flex-direction: column; text-align: left; }}
-.footer-col h4 {{ color: #FFFFFF !important; font-size: 1.05rem; margin-bottom: 15px; font-weight: 600; font-family: 'Figtree', sans-serif !important;}}
+.footer-col h4 {{ color: #FFFFFF !important; font-size: 1.05rem; margin-bottom: 15px; font-weight: 600; font-family: 'OpenDyslexic', 'Figtree', sans-serif !important;}}
 .footer-col a {{ color: #9AA0A6 !important; text-decoration: none; font-size: 0.9rem; margin-bottom: 10px; transition: color 0.2s, transform 0.2s; }}
 .footer-col a:hover {{ color: {cyan_color} !important; transform: translateX(5px); }}
 
 /* --- HERO: asymmetric split, not a centered stack --- */
 .hero-eyebrow {{
-    font-family: 'Figtree', sans-serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.14em;
+    font-family: 'OpenDyslexic', 'Figtree', sans-serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.14em;
     text-transform: uppercase; color: {accent_color}; margin-bottom: 14px;
 }}
 .hero-copy h1 {{
-    font-family: 'Fraunces', Georgia, serif !important; font-size: 3.1rem; line-height: 1.12;
+    font-family: 'OpenDyslexic', 'Fraunces', Georgia, serif !important; font-size: 3.1rem; line-height: 1.12;
     font-weight: 600 !important; margin: 0 0 18px 0 !important; color: {text_color} !important; text-align: left;
 }}
 .hero-copy h1 em {{ font-style: italic; color: {cyan_color}; font-weight: 700; }}
 .hero-copy p {{ font-size: 1.08rem; color: #9AA0A6 !important; max-width: 460px; margin-bottom: 28px !important; text-align: left; }}
 .cta-btn {{
     display: inline-block; background-color: {cyan_color}; color: #0E1117 !important; text-decoration: none !important;
-    font-family: 'Figtree', sans-serif; font-weight: 700; font-size: 1rem; padding: 13px 28px; border-radius: 8px;
+    font-family: 'OpenDyslexic', 'Figtree', sans-serif; font-weight: 700; font-size: 1rem; padding: 13px 28px; border-radius: 8px;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }}
 .cta-btn:hover {{ transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,229,255,0.3); }}
@@ -266,7 +269,7 @@ button[kind="primary"]:hover {{
     box-shadow: 0 12px 24px rgba(0,0,0,0.35); opacity: 0.7;
 }}
 .stack-back p {{ font-family: 'Arial', sans-serif !important; font-size: 0.82rem !important; line-height: 1.6 !important; color: #857D6E !important; margin: 0 !important; }}
-.stack-back .stack-label {{ font-family: 'Figtree', sans-serif; font-size: 0.7rem; font-weight: 700; color: #6D6558; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; display: block; }}
+.stack-back .stack-label {{ font-family: 'OpenDyslexic', 'Figtree', sans-serif; font-size: 0.7rem; font-weight: 700; color: #6D6558; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; display: block; }}
 .stack-front {{
     position: absolute; top: 55px; left: 0; width: 82%; padding: 30px 34px; border-radius: 6px 16px 16px 6px;
     background-color: {paper_bg}; border: 1px solid {paper_border}; transform: rotate(3deg);
@@ -276,11 +279,11 @@ button[kind="primary"]:hover {{
     content: ''; position: absolute; top: 0; right: 0; width: 0; height: 0;
     border-style: solid; border-width: 0 22px 22px 0; border-color: transparent #DCCEA4 transparent transparent;
 }}
-.stack-front .stack-label {{ font-family: 'Figtree', sans-serif; font-size: 0.7rem; font-weight: 700; color: {paper_accent}; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; display: block; }}
+.stack-front .stack-label {{ font-family: 'OpenDyslexic', 'Figtree', sans-serif; font-size: 0.7rem; font-weight: 700; color: {paper_accent}; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; display: block; }}
 .stack-front p {{ font-family: 'OpenDyslexic', sans-serif !important; font-size: 1rem !important; line-height: 1.75 !important; color: {paper_ink} !important; margin: 0 !important; }}
 .stack-pill {{
     position: absolute; bottom: 18px; right: 6%; background-color: {accent_color}; color: #0E1117;
-    font-family: 'Figtree', sans-serif; font-weight: 700; font-size: 0.78rem; padding: 7px 16px 7px 12px;
+    font-family: 'OpenDyslexic', 'Figtree', sans-serif; font-weight: 700; font-size: 0.78rem; padding: 7px 16px 7px 12px;
     border-radius: 20px; box-shadow: 0 8px 18px rgba(0,0,0,0.35); z-index: 5;
 }}
 
@@ -295,25 +298,34 @@ button[kind="primary"]:hover {{
     width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
     font-size: 1.2rem; background-color: rgba(255,255,255,0.06); margin-bottom: 14px;
 }}
-.feature-card h4 {{ font-family: 'Fraunces', Georgia, serif !important; font-size: 1.08rem; margin: 0 0 8px 0 !important; color: {text_color} !important; }}
+.feature-card h4 {{ font-family: 'OpenDyslexic', 'Fraunces', Georgia, serif !important; font-size: 1.08rem; margin: 0 0 8px 0 !important; color: {text_color} !important; }}
 .feature-card p {{ font-size: 0.88rem; color: #9AA0A6 !important; margin: 0 !important; line-height: 1.55; }}
 
 /* --- MISSION: editorial block with a spine, not two plain paragraphs --- */
 .mission-block {{ border-left: 3px solid {cyan_color}; padding-left: 26px; }}
-.mission-block .kicker {{ font-family: 'Figtree', sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: {accent_color}; margin-bottom: 10px; }}
+.mission-block .kicker {{ font-family: 'OpenDyslexic', 'Figtree', sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: {accent_color}; margin-bottom: 10px; }}
 .mission-block p {{ font-size: 1rem; color: #C9C0AE !important; line-height: 1.7; margin-bottom: 14px !important; }}
-.mission-block p:first-of-type {{ font-family: 'Fraunces', Georgia, serif; font-size: 1.25rem; color: {text_color} !important; font-style: italic; }}
+.mission-block p:first-of-type {{ font-family: 'OpenDyslexic', 'Fraunces', Georgia, serif; font-size: 1.25rem; color: {text_color} !important; font-style: italic; }}
 
 /* --- AUTH CARD: a real panel instead of bare inputs on the page --- */
 .auth-card-header {{ text-align: center; margin-bottom: 22px; }}
 .auth-card-header .icon-badge {{
     width: 52px; height: 52px; border-radius: 50%; background-color: rgba(0,229,255,0.12); border: 1px solid {cyan_color};
     display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin: 0 auto 14px auto;
+    overflow: hidden;
 }}
+.auth-card-header .icon-badge img {{ width: 100%; height: 100%; object-fit: cover; }}
 .auth-card-header h3 {{ margin: 0 0 4px 0 !important; }}
 .auth-card-header p {{ color: #9AA0A6 !important; font-size: 0.9rem; margin: 0 !important; }}
-.auth-card {{
-    background-color: {card_color}; border: 1px solid {border_color}; border-radius: 16px; padding: 34px 38px 24px 38px;
+/* Real Streamlit container (st.container(border=True, key="auth_card")) —
+   replaces the old manually-opened/closed <div class="auth-card"> which
+   rendered as an empty styled bar because the two markdown() calls that
+   opened and closed it were separate, unnested DOM siblings. */
+div[class*="st-key-auth_card"] {{
+    background-color: {card_color} !important;
+    border: 1px solid {border_color} !important;
+    border-radius: 16px !important;
+    padding: 34px 38px 24px 38px !important;
     box-shadow: 0 14px 30px rgba(0,0,0,0.4);
 }}
 
@@ -322,13 +334,18 @@ button[kind="primary"]:hover {{
    the landing page above is untouched.
    ====================================================================== */
 
-/* --- App shell background: subtle depth instead of flat black --- */
+/* --- App shell background: flat and calm, not competing gradients --- */
 [data-testid="stMain"] {{
-    background:
-        radial-gradient(circle at 15% 0%, rgba(0,229,255,0.05) 0%, transparent 45%),
-        radial-gradient(circle at 85% 10%, rgba(105,240,174,0.04) 0%, transparent 45%),
-        {bg_color};
+    background-color: {bg_color};
 }}
+
+/* Reduce hover motion in the workspace — sudden lift/glow on every
+   button is exactly the kind of visual noise that breaks focus for
+   ADHD readers. Keep it on the landing page (outside stMain). */
+[data-testid="stMain"] button[kind="primary"]:hover {{
+    background-color: {accent_color} !important; transform: none !important; box-shadow: none !important;
+}}
+[data-testid="stMain"] .feature-card:hover {{ transform: none; }}
 
 /* --- Workspace top bar: greeting + live doc status, replaces the bare avatar row --- */
 .ws-topbar {{
@@ -336,61 +353,78 @@ button[kind="primary"]:hover {{
     padding: 4px 4px 20px 4px; margin-bottom: 6px; border-bottom: 1px solid {border_color};
 }}
 .ws-greeting-eyebrow {{
-    font-family: 'Figtree', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+    font-family: 'OpenDyslexic', 'Figtree', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
     text-transform: uppercase; color: {accent_color}; margin-bottom: 4px;
 }}
 .ws-greeting-title {{
-    font-family: 'Fraunces', Georgia, serif !important; font-size: 1.7rem; font-weight: 700 !important;
+    font-family: 'OpenDyslexic', 'Fraunces', Georgia, serif !important; font-size: 1.5rem; font-weight: 700 !important;
     color: {text_color} !important; margin: 0 !important; line-height: 1.2;
 }}
 .ws-doc-chip {{
-    display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04);
-    border: 1px solid {border_color}; border-radius: 30px; padding: 8px 18px 8px 8px;
+    display: flex; align-items: center; gap: 10px; background: {card_color};
+    border: 1px solid {border_color}; border-radius: 10px; padding: 8px 16px 8px 8px;
 }}
 .ws-doc-chip .dot {{
-    width: 30px; height: 30px; border-radius: 50%; display:flex; align-items:center; justify-content:center;
-    background: rgba(0,229,255,0.14); font-size: 0.95rem; flex-shrink: 0;
+    width: 28px; height: 28px; border-radius: 8px; display:flex; align-items:center; justify-content:center;
+    background: rgba(0,229,255,0.10); font-size: 0.9rem; flex-shrink: 0;
 }}
 .ws-doc-chip .doc-meta {{ line-height: 1.15; }}
 .ws-doc-chip .doc-meta .lbl {{ font-size: 0.68rem; color: #6D7280; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }}
 .ws-doc-chip .doc-meta .val {{ font-size: 0.86rem; color: {text_color}; font-weight: 600; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
 
-/* --- Upload / action card: clear zones instead of default-uploader-in-a-box --- */
-.upload-card {{
-    background: linear-gradient(160deg, rgba(0,229,255,0.05), rgba(30,28,41,0.55) 55%);
-    border: 1px solid rgba(255,255,255,0.08);
-    padding: 26px 28px;
-    border-radius: 18px;
-    box-shadow: 0 12px 28px rgba(0,0,0,0.45);
-    margin-bottom: 18px;
-}}
-.upload-card-head {{ display:flex; align-items:flex-start; gap:14px; margin-bottom: 4px; }}
-.upload-card-head .feature-icon {{ background-color: rgba(0,229,255,0.12); }}
-.upload-card-head .title {{ font-weight:600; color:#E0E0E0; margin:0 0 4px 0; font-family:'Fraunces', serif; font-size:1.08rem; }}
-.upload-card-head .sub {{ color:#9AA0A6; margin:0; font-size:0.85rem; line-height:1.5; }}
-
-/* --- Action toolbar: a real pill-shaped toolbar instead of scattered columns --- */
-.toolbar-wrap {{
-    background: rgba(255,255,255,0.03);
-    border: 1px solid {border_color};
-    border-radius: 14px;
-    padding: 10px 14px;
-    margin: 4px 0 22px 0;
-    display: flex;
-    align-items: center;
-}}
-.toolbar-label {{
-    font-family: 'Figtree', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
-    text-transform: uppercase; color: #6D7280; padding-left: 6px; white-space: nowrap;
+/* --- Action row: the two main buttons, centered and sized up since
+   these are the primary actions on the page (no card wrapper — the old
+   one rendered as an empty bar, see the upload-dropzone fix note). --- */
+[data-testid="stMain"] .stButton button {{
+    padding: 1rem 1.6rem !important;
+    font-size: 1.2rem !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    min-height: 3.6rem !important;
 }}
 
-/* --- Content stats strip above the reading tabs --- */
+/* --- Upload dropzone: compact, centered, no file-size fine print --- */
+[data-testid="stFileUploaderDropzone"] {{
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 20px 24px !important;
+    min-height: 100px !important;
+}}
+[data-testid="stFileUploaderDropzoneInstructions"] {{
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+}}
+[data-testid="stFileUploaderDropzoneInstructions"] span {{
+    font-size: 1.05rem !important;
+}}
+/* The "Limit 200MB per file • PDF" fine print — not needed on screen. */
+[data-testid="stFileUploaderDropzoneInstructions"] small {{
+    display: none !important;
+}}
+[data-testid="stFileUploaderDropzone"] svg {{
+    width: 32px !important;
+    height: 32px !important;
+}}
+[data-testid="stFileUploaderDropzone"] button {{
+    padding: 0.7rem 1.3rem !important;
+    font-size: 1rem !important;
+    min-height: auto !important;
+    margin-top: 6px !important;
+}}
+
+/* --- Content stats strip above the reading tabs: kept to the essentials
+   (word count + simplify status) — font size/spacing are already visible
+   as sidebar sliders, repeating them here was just more numbers to scan --- */
 .content-stats {{
-    display: flex; gap: 10px; margin: 2px 0 16px 0; flex-wrap: wrap;
+    display: flex; gap: 10px; margin: 22px 0 16px 0; flex-wrap: wrap; justify-content: center;
 }}
 .stat-chip {{
-    background: rgba(255,255,255,0.04); border: 1px solid {border_color}; border-radius: 20px;
-    padding: 6px 14px; font-size: 0.78rem; color: #9AA0A6; font-family: 'Figtree', sans-serif; font-weight: 500;
+    background: {card_color}; border: 1px solid {border_color}; border-radius: 8px;
+    padding: 6px 14px; font-size: 0.82rem; color: #9AA0A6; font-family: 'OpenDyslexic', 'Figtree', sans-serif; font-weight: 500;
 }}
 .stat-chip b {{ color: {cyan_color}; font-weight: 700; }}
 
@@ -398,12 +432,13 @@ button[kind="primary"]:hover {{
 [data-testid="stSidebar"] .block-container {{ padding-top: 1.2rem; }}
 .sb-brand {{ display:flex; align-items:center; gap:10px; margin-bottom: 18px; }}
 .sb-brand .logo-dot {{ width:30px; height:30px; border-radius:50%; background: linear-gradient(135deg, {cyan_color}, {accent_color}); flex-shrink:0; }}
-.sb-brand .name {{ font-family:'Fraunces', Georgia, serif; font-style: italic; font-weight:700; font-size:1.08rem; color:#FFFFFF; }}
+.sb-brand .name {{ font-family:'OpenDyslexic', 'Fraunces', Georgia, serif; font-style: italic; font-weight:700; font-size:1.08rem; color:#FFFFFF; }}
 .sb-section-label {{
     color: #6D7280 !important; font-size: 0.72rem !important; font-weight: 700 !important; text-transform: uppercase;
-    letter-spacing: 0.08em; margin: 18px 0 8px 2px; display:block; font-family: 'Figtree', sans-serif !important;
+    letter-spacing: 0.08em; margin: 18px 0 8px 2px; display:block; font-family: 'OpenDyslexic', 'Figtree', sans-serif !important;
 }}
 [data-testid="stSidebar"] [data-testid="stFileUploader"] {{ padding: 6px; }}
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] {{ padding-top: 4px; }}
 
 /* Recent-document buttons: give the active/hover state some presence */
 [data-testid="stSidebar"] button[kind="secondary"] {{
@@ -494,7 +529,7 @@ if not st.session_state.logged_in:
                     align-items: center;
                 }}
                 .nav-brand-title {{
-                    font-family: 'Fraunces', Georgia, serif;
+                    font-family: 'OpenDyslexic', 'Fraunces', Georgia, serif;
                     font-size: 2.1rem;
                     font-weight: 700;
                     font-style: italic;
@@ -510,7 +545,7 @@ if not st.session_state.logged_in:
                     padding: 8px 24px;
                     border-radius: 25px;
                     text-decoration: none !important;
-                    font-family: 'Figtree', sans-serif;
+                    font-family: 'OpenDyslexic', 'Figtree', sans-serif;
                     font-size: 1rem;
                     font-weight: 600;
                     transition: all 0.25s ease;
@@ -588,62 +623,46 @@ if not st.session_state.logged_in:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div style='height: 50px;'></div>", unsafe_allow_html=True)
-    st.markdown("---")
-    st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
-
-    mission_col, spacer_col = st.columns([1.4, 1])
-    with mission_col:
-        st.markdown("""
-        <div class="mission-block">
-            <div class="kicker">Who's building this</div>
-            <p>Most reading tools force the student to adapt to the technology.</p>
-            <p>We're the UI engineering team from NSUT CSAI, building this <em>with</em> neurodivergent users, not just for them — so the AI adapts to the student instead, giving them a low-sensory space to process complex material at their own speed.</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
-    st.markdown("---")
+    st.markdown("<div style='height: 60px;'></div>", unsafe_allow_html=True)
 
     st.markdown('<div id="login-section" style="padding-top: 60px; margin-top: -60px;"></div>', unsafe_allow_html=True)
     st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
     _, auth_col, _ = st.columns([1, 1.1, 1])
     with auth_col:
-        st.markdown('<div class="auth-card">', unsafe_allow_html=True)
-        st.markdown("""
-        <div class="auth-card-header">
-            <div class="icon-badge">🔑</div>
-            <h3>Access the app</h3>
-            <p>Log in to pick up where you left off, or create an account.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container(border=True, key="auth_card"):
+            st.markdown(f"""
+            <div class="auth-card-header">
+                <div class="icon-badge"><img src="{logo_src}" alt="Readora AI"></div>
+                <h3>Access the app</h3>
+                <p>Log in to pick up where you left off, or create an account.</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-        log_user = st.text_input("Username")
-        log_pass = st.text_input("Password", type="password")
+            log_user = st.text_input("Username")
+            log_pass = st.text_input("Password", type="password")
         
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("Log In", type="primary", use_container_width=True):
-                c.execute('SELECT * FROM users WHERE username=? AND password=?', (log_user, log_pass))
-                if c.fetchone():
-                    st.session_state.logged_in = True
-                    st.session_state.username = log_user
-                    st.rerun()
-                else:
-                    st.toast("Invalid credentials. Please try again.", icon="🚨")
-        with c2:
-            if st.button("Sign Up", use_container_width=True):
-                if log_user and log_pass:
-                    c.execute('INSERT INTO users VALUES (?, ?)', (log_user, log_pass))
-                    conn.commit()
-                    st.toast("Account created! You can now log in.", icon="✅")
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("Log In", type="primary", use_container_width=True):
+                    c.execute('SELECT * FROM users WHERE username=? AND password=?', (log_user, log_pass))
+                    if c.fetchone():
+                        st.session_state.logged_in = True
+                        st.session_state.username = log_user
+                        st.rerun()
+                    else:
+                        st.toast("Invalid credentials. Please try again.", icon="🚨")
+            with c2:
+                if st.button("Sign Up", use_container_width=True):
+                    if log_user and log_pass:
+                        c.execute('INSERT INTO users VALUES (?, ?)', (log_user, log_pass))
+                        conn.commit()
+                        st.toast("Account created! You can now log in.", icon="✅")
         
-        st.markdown("<div style='text-align: center; margin: 20px 0; color: #5A5E73; font-size: 0.9rem;'>OR</div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align: center; margin: 20px 0; color: #5A5E73; font-size: 0.9rem;'>OR</div>", unsafe_allow_html=True)
         
-        if st.button("🌐 Continue with Google", use_container_width=True):
-            st.toast("Google OAuth integration coming soon!", icon="ℹ️")
-        st.markdown('</div>', unsafe_allow_html=True)
+            if st.button("🌐 Continue with Google", use_container_width=True):
+                st.toast("Google OAuth integration coming soon!", icon="ℹ️")
 
     footer_html = """
     <div class="mega-footer">
@@ -680,6 +699,53 @@ if not st.session_state.logged_in:
     st.markdown(footer_html, unsafe_allow_html=True)
 
 else:
+    # ---------------------------------------------------------------
+    # WORKSPACE-WIDE READABILITY — on top of the OpenDyslexic base font
+    # now used everywhere (including the landing page), this widens the
+    # selector to catch popovers/toasts/tooltips too, and loosens the
+    # spacing/sizing on small UI text so it isn't just the big reading
+    # pane that's easy to read. Landing page *layout* is still untouched
+    # — only the font+spacing rules above apply there too.
+    # ---------------------------------------------------------------
+    st.markdown("""
+    <style>
+    /* .stApp wraps the entire rendered page (including popovers, toasts,
+       tooltips) so this reaches further than just the main/sidebar
+       containers used before. Icon elements are excluded — Streamlit
+       renders its sidebar-collapse arrow, expander chevron, and upload
+       icon as ligature text through a dedicated icon font, and forcing
+       those into OpenDyslexic breaks the ligature so the raw icon name
+       ("keyboard_double_arrow_left", "expand_more"...) shows up as
+       literal, overlapping text instead of a small glyph. */
+    .stApp *:not([data-testid="stIconMaterial"]):not([class*="material-icons"]):not([class*="material-symbols"]),
+    .stApp {
+        font-family: 'OpenDyslexic', 'Figtree', sans-serif !important;
+    }
+    [data-testid="stIconMaterial"],
+    [class*="material-icons"],
+    [class*="material-symbols"] {
+        font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif !important;
+    }
+
+    /* Small UI text tends to get squeezed by default Streamlit styling —
+       give it room to breathe so it reads as easily as the big pane does. */
+    .stApp p, .stApp li, .stApp label, .stApp span, .stApp div,
+    [data-testid="stMarkdownContainer"] p {
+        letter-spacing: 0.01em;
+        line-height: 1.65 !important;
+    }
+    .stApp label, [data-testid="stWidgetLabel"] p {
+        font-size: 0.95rem !important;
+    }
+    .stat-chip, .badge, .toolbar-label, .sb-section-label, .ws-doc-chip .lbl {
+        font-size: 0.85rem !important;
+        letter-spacing: 0.02em !important;
+    }
+    .ws-doc-chip .val { font-size: 0.95rem !important; }
+    [data-testid="stSidebar"] button p { font-size: 0.95rem !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
     # ---------------------------------------------------------------
     # WORKSPACE TOP BAR — greeting + live status of the current doc.
     # (Account settings now live only in the sidebar popover below —
@@ -726,6 +792,7 @@ else:
             st.session_state.simplified_text = ""
             st.session_state.last_uploaded_file = None
             st.session_state.current_doc_id = None
+            st.session_state.is_reading = False
             st.rerun()
 
         st.markdown("<span class='sb-section-label'>Recent Documents</span>", unsafe_allow_html=True)
@@ -733,7 +800,7 @@ else:
         c.execute("SELECT id, doc_name, original_text, simplified_text FROM documents WHERE username=? ORDER BY id DESC", (st.session_state.username,))
         user_history = c.fetchall()
 
-        with st.container(height=260):
+        with st.container(height=280):
             if not user_history:
                 st.markdown("<span style='color: #5A5E73; font-size: 0.85rem;'>No documents yet — upload a PDF to get started.</span>", unsafe_allow_html=True)
             else:
@@ -747,11 +814,12 @@ else:
                         st.session_state.last_uploaded_file = doc_name
                         st.session_state.extracted_text = orig_text
                         st.session_state.simplified_text = simp_text
+                        st.session_state.is_reading = False
                         st.rerun()
 
-        st.markdown("<span class='sb-section-label'>Visual Settings</span>", unsafe_allow_html=True)
-        st.session_state.font_size = st.slider("🔤 Font Size", 14, 48, st.session_state.get('font_size', 22))
-        st.session_state.line_spacing = st.slider("↕️ Line Spacing", 1.0, 4.0, st.session_state.get('line_spacing', 1.8), step=0.1)
+        with st.expander("🔤 Visual Settings", expanded=False):
+            st.session_state.font_size = st.slider("Font Size", 14, 48, st.session_state.get('font_size', 22))
+            st.session_state.line_spacing = st.slider("Line Spacing", 1.0, 4.0, st.session_state.get('line_spacing', 1.8), step=0.1)
 
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
@@ -760,7 +828,7 @@ else:
             b64_img = base64.b64encode(st.session_state.profile_photo).decode()
             avatar_html = f'<img src="data:image/jpeg;base64,{b64_img}" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover;">'
         else:
-            avatar_html = f'<div style="width: 34px; height: 34px; border-radius: 50%; background-color: #00E5FF; color: #0E1117; display: flex; justify-content: center; align-items: center; font-weight: 700; font-family: \'Figtree\', sans-serif; font-size: 14px; flex-shrink:0;">{initial}</div>'
+            avatar_html = f'<div style="width: 34px; height: 34px; border-radius: 50%; background-color: #00E5FF; color: #0E1117; display: flex; justify-content: center; align-items: center; font-weight: 700; font-family: \'OpenDyslexic\', \'Figtree\', sans-serif; font-size: 14px; flex-shrink:0;">{initial}</div>'
 
         display_name = st.session_state.username.lower() if st.session_state.username else "user"
 
@@ -803,24 +871,10 @@ else:
             st.button("🚪 Out", use_container_width=True, help="Log Out",
                        on_click=lambda: st.session_state.update(logged_in=False))
 
-    # Wrapped inside upload card container
-    st.markdown('<div class="upload-card">', unsafe_allow_html=True)
-
-    upload_intro_col, upload_drop_col = st.columns([1, 1.3], gap="large")
-    with upload_intro_col:
-        st.markdown("""
-        <div class="upload-card-head">
-            <div class="feature-icon" style="color:#00E5FF; flex-shrink:0;">📥</div>
-            <div>
-                <p class="title">Bring in a document</p>
-                <p class="sub">PDF only, for now. It's extracted, simplified, and saved to your workspace history automatically.</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    with upload_drop_col:
+    # Wider upload dropzone, still centered.
+    _, upload_center_col, _ = st.columns([1, 2, 1])
+    with upload_center_col:
         uploaded_file = st.file_uploader("Drop your reading material here (PDF)", type=['pdf'], label_visibility="collapsed")
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
     if uploaded_file is not None:
         if st.session_state.get('last_uploaded_file') != uploaded_file.name:
@@ -851,109 +905,203 @@ else:
             except Exception as e:
                 status_placeholder.empty()
                 st.error(f"Connection Error: Could not connect to FastAPI backend on {BACKEND_URL}")
-                
-    st.markdown('<div class="toolbar-wrap">', unsafe_allow_html=True)
-    tb_label_col, tb_btn1_col, tb_btn2_col, tb_spacer_col = st.columns([1.4, 1.6, 1.6, 3.4])
-    with tb_label_col:
-        st.markdown('<div class="toolbar-label">Actions</div>', unsafe_allow_html=True)
-    with tb_btn1_col:
-        btn_simplify = st.button("✨ Simplify Text", type="primary", use_container_width=True)
-    with tb_btn2_col:
-        btn_read = st.button("🔊 Read Aloud", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    if btn_read:
-        text_to_read = st.session_state.simplified_text if st.session_state.simplified_text else st.session_state.extracted_text
-        if text_to_read:
-            clean_text = text_to_read.replace('*', '').replace('#', '')
-            clean_text = re.sub(r'\b\d+\.\s+', '', clean_text)
-            clean_text = clean_text.replace('- ', '')
-            safe_text = json.dumps(clean_text)
 
-            player_html = f"""
-            <style>
-                @font-face {{ font-family: 'OpenDyslexic'; src: url('https://cdn.jsdelivr.net/gh/antijingoist/opendyslexic@master/compiled/OpenDyslexic-Regular.otf') format('opentype'); }}
-                body {{ font-family: 'OpenDyslexic', sans-serif; background-color: {paper_bg}; color: {paper_ink}; padding: 24px 28px; border-radius: 12px; margin: 0; border: 1px solid {paper_border}; }}
-                .highlight {{ background-color: {cyan_color}; color: #0E1117; font-weight: bold; border-radius: 4px; padding: 2px 4px; box-shadow: 0 0 8px rgba(0,229,255,0.5); transition: background-color 0.1s ease; }}
-                #progress-container {{ width: 100%; background-color: {paper_border}; border-radius: 8px; margin-bottom: 20px; height: 10px; overflow: hidden; }}
-                #progress-bar {{ width: 0%; height: 100%; background-color: {accent_color}; transition: width 0.1s linear; }}
-                .controls {{ margin-bottom: 20px; display: flex; gap: 15px; align-items: center; font-family: 'Segoe UI', sans-serif; }}
-                button {{ background-color: {cyan_color}; color: #0E1117; border: none; padding: 8px 16px; border-radius: 20px; font-family: 'Segoe UI', sans-serif; font-weight: bold; cursor: pointer; transition: 0.2s; }}
-                button:hover {{ background-color: {accent_color}; }}
-                #status {{ font-family: 'Segoe UI', sans-serif; }}
-            </style>
-            
+    # Centered action row.
+    st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
+    _, btn1_col, btn2_col, _ = st.columns([1, 1.6, 1.6, 1])
+    with btn1_col:
+        btn_simplify = st.button("✨ Simplify Text", type="primary", use_container_width=True)
+    with btn2_col:
+        read_btn_label = "⏹ Stop Reading" if st.session_state.get('is_reading') else "🔊 Read Aloud"
+        btn_read = st.button(read_btn_label, use_container_width=True)
+
+    if btn_read:
+        if st.session_state.get('is_reading'):
+            # Stop was pressed — silence the browser's speech synthesis
+            # right away, then drop back to the normal static tab.
+            st.session_state.is_reading = False
+            components.html(
+                "<script>(window.parent.speechSynthesis || window.speechSynthesis).cancel();</script>",
+                height=0,
+            )
+        else:
+            if st.session_state.simplified_text:
+                st.session_state.is_reading = True
+            else:
+                st.warning("Generate the AI-simplified version first (click '✨ Simplify Text') — Read Aloud only narrates the simplified text.")
+        st.rerun()
+
+    def build_reader_html(text_to_read: str) -> str:
+        """Word-by-word TTS reader, styled to match the reading pane, with
+        digit-by-digit number pronunciation and synced word highlighting."""
+        clean_text = text_to_read.replace('*', '').replace('#', '')
+        clean_text = re.sub(r'\b\d+\.\s+', '', clean_text)
+        clean_text = clean_text.replace('- ', '')
+        safe_text = json.dumps(clean_text)
+
+        return f"""
+        <style>
+            @font-face {{ font-family: 'OpenDyslexic'; src: url('https://cdn.jsdelivr.net/gh/antijingoist/opendyslexic@master/compiled/OpenDyslexic-Regular.otf') format('opentype'); }}
+            body {{ margin: 0; background: transparent; }}
+            .reader-page {{
+                position: relative;
+                font-family: 'OpenDyslexic', sans-serif;
+                background-color: {paper_bg};
+                color: {paper_ink};
+                padding: 28px 32px;
+                border-radius: 6px 12px 12px 6px;
+                border: 1px solid {paper_border};
+                box-shadow: 0 14px 30px rgba(0,0,0,0.35), inset 0 0 0 1px {paper_border};
+            }}
+            .reader-page::after {{
+                content: ''; position: absolute; top: 0; right: 0; width: 0; height: 0;
+                border-style: solid; border-width: 0 22px 22px 0;
+                border-color: transparent #DCCEA4 transparent transparent;
+                filter: drop-shadow(-2px 2px 3px rgba(0,0,0,0.18));
+            }}
+            .reader-badge {{
+                display: inline-block; background-color: rgba(0,229,255,0.14); color: #0E7490;
+                padding: 4px 12px; border-radius: 15px; font-size: 0.75rem; font-weight: 700;
+                letter-spacing: 0.03em; margin-bottom: 16px; font-family: 'OpenDyslexic', sans-serif;
+            }}
+            .highlight {{ background-color: {cyan_color}; color: #0E1117; font-weight: bold; border-radius: 4px; padding: 2px 4px; box-shadow: 0 0 8px rgba(0,229,255,0.5); transition: background-color 0.1s ease; }}
+            #progress-container {{ width: 100%; background-color: {paper_border}; border-radius: 8px; margin-bottom: 18px; height: 10px; overflow: hidden; }}
+            #progress-bar {{ width: 0%; height: 100%; background-color: {accent_color}; transition: width 0.1s linear; }}
+            .controls {{ margin-bottom: 20px; display: flex; gap: 15px; align-items: center; font-family: 'OpenDyslexic', sans-serif; }}
+            button {{ background-color: {cyan_color}; color: #0E1117; border: none; padding: 8px 16px; border-radius: 20px; font-family: 'OpenDyslexic', sans-serif; font-weight: bold; cursor: pointer; transition: 0.2s; }}
+            button:hover {{ background-color: {accent_color}; }}
+            #status {{ font-family: 'OpenDyslexic', sans-serif; }}
+        </style>
+
+        <div class="reader-page">
+            <div class="reader-badge">🔊 AI Output — Reading Aloud</div>
             <div id="progress-container"><div id="progress-bar"></div></div>
             <div class="controls">
                 <button id="play-pause-btn" onclick="togglePlayPause()">⏸️ Pause Reading</button>
                 <span id="status" style="color: #4E7A67; font-weight: bold;">🔊 Speaking...</span>
             </div>
-            <div id="text-display" style="font-size: 22px; line-height: 1.8;"></div>
+            <div id="text-display" style="font-size: {st.session_state.get('font_size', 22)}px; line-height: {st.session_state.get('line_spacing', 1.8)};"></div>
+        </div>
 
-            <script>
-                const rawText = {safe_text};
-                const display = document.getElementById("text-display");
-                const progressBar = document.getElementById("progress-bar");
-                const status = document.getElementById("status");
-                const playPauseBtn = document.getElementById("play-pause-btn");
+        <script>
+            const rawText = {safe_text};
+            const display = document.getElementById("text-display");
+            const progressBar = document.getElementById("progress-bar");
+            const status = document.getElementById("status");
+            const playPauseBtn = document.getElementById("play-pause-btn");
 
-                const words = rawText.split(/(\\s+)/); 
-                display.innerHTML = words.map((w, i) => `<span id="word-${{i}}">${{w}}</span>`).join('');
+            // Split into alternating word / whitespace tokens so we can
+            // render each word in its own <span> for highlighting.
+            const tokens = rawText.split(/(\\s+)/);
+            display.innerHTML = tokens.map((w, i) => `<span id="word-${{i}}">${{w}}</span>`).join('');
 
-                const synth = window.parent.speechSynthesis || window.speechSynthesis;
-                synth.cancel();
+            // Indices of the actual words (skipping whitespace tokens).
+            const wordIndices = [];
+            for (let i = 0; i < tokens.length; i++) {{
+                if (tokens[i].trim().length > 0) wordIndices.push(i);
+            }}
 
-                let msg = new SpeechSynthesisUtterance(rawText);
-                msg.lang = 'en-US';
-                msg.rate = 0.9; 
+            // Numbers should be read digit-by-digit ("8315" -> "eight
+            // three one five"), not as a full number ("eight thousand
+            // three hundred fifteen"). We keep the on-screen text as-is
+            // and only rewrite what gets *spoken* for each word.
+            function toSpeechForm(word) {{
+                return word.replace(/\\d+/g, (digits) => digits.split('').join(' '));
+            }}
 
-                msg.onboundary = (event) => {{
-                    if(event.name === 'word') {{
-                        const pct = (event.charIndex / rawText.length) * 100;
-                        progressBar.style.width = pct + "%";
+            const synth = window.parent.speechSynthesis || window.speechSynthesis;
+            synth.cancel();
 
-                        let charCount = 0;
-                        for (let i = 0; i < words.length; i++) {{
-                            charCount += words[i].length;
-                            if (charCount > event.charIndex) {{
-                                document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-                                const activeWord = document.getElementById(`word-${{i}}`);
-                                if(activeWord && activeWord.innerText.trim().length > 0) {{
-                                    activeWord.classList.add('highlight');
-                                }}
-                                break;
-                            }}
-                        }}
-                    }}
-                }};
-
-                msg.onend = () => {{
-                    progressBar.style.width = "100%";
-                    status.innerText = "✅ Finished";
-                    playPauseBtn.style.display = "none"; 
-                    document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-                }};
-
-                synth.speak(msg);
-
-                function togglePlayPause() {{
-                    if (synth.paused) {{
-                        synth.resume();
-                        playPauseBtn.innerText = "⏸️ Pause Reading";
-                        status.innerText = "🔊 Speaking...";
-                    }} else if (synth.speaking) {{
-                        synth.pause();
-                        playPauseBtn.innerText = "▶️ Resume Reading";
-                        status.innerText = "⏸️ Paused";
-                    }}
+            // Pick a warm, natural-sounding female voice if the browser exposes one.
+            // Voice lists can load asynchronously, so we handle both cases.
+            function pickFemaleVoice() {{
+                const voices = synth.getVoices();
+                if (!voices || voices.length === 0) return null;
+                const preferredNames = [
+                    "Google US English Female", "Google UK English Female",
+                    "Microsoft Aria Online (Natural) - English (United States)",
+                    "Microsoft Jenny Online (Natural) - English (United States)",
+                    "Microsoft Zira Desktop - English (United States)",
+                    "Samantha", "Victoria", "Karen", "Moira", "Tessa", "Serena",
+                    "Google US English"
+                ];
+                for (const name of preferredNames) {{
+                    const match = voices.find(v => v.name === name);
+                    if (match) return match;
                 }}
-            </script>
-            """
-            st.markdown("### 🎧 Interactive Reader")
-            components.html(player_html, height=400, scrolling=True)
-            st.markdown("---")
-        else:
-            st.warning("Please upload a PDF or generate simplified text first!")
+                const looseMatch = voices.find(v =>
+                    /female/i.test(v.name) && /en/i.test(v.lang)
+                );
+                if (looseMatch) return looseMatch;
+                return voices.find(v => /en/i.test(v.lang)) || voices[0];
+            }}
+
+            let chosenVoice = null;
+
+            function highlightWord(pos) {{
+                document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+                if (pos >= wordIndices.length) return;
+                const tokenIndex = wordIndices[pos];
+                const el = document.getElementById(`word-${{tokenIndex}}`);
+                if (el) el.classList.add('highlight');
+                progressBar.style.width = ((pos + 1) / wordIndices.length * 100) + "%";
+            }}
+
+            // Words are grouped into small chunks (3 at a time) before being
+            // spoken as one utterance each. Single-word utterances have a
+            // noticeable startup lag per word which reads as "too slow";
+            // small chunks keep pace natural while still letting us highlight
+            // the exact word as its chunk begins.
+            const CHUNK_SIZE = 3;
+            function speakFrom(pos) {{
+                if (pos >= wordIndices.length) {{
+                    status.innerText = "✅ Finished";
+                    playPauseBtn.style.display = "none";
+                    document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+                    return;
+                }}
+                highlightWord(pos);
+
+                const chunkEnd = Math.min(pos + CHUNK_SIZE, wordIndices.length);
+                const chunkTokenIdx = wordIndices.slice(pos, chunkEnd);
+                const chunkWords = chunkTokenIdx.map(i => toSpeechForm(tokens[i]));
+                const spoken = chunkWords.join(' ');
+
+                const utter = new SpeechSynthesisUtterance(spoken);
+                utter.lang = 'en-US';
+                utter.rate = 1.15;
+                utter.pitch = 1.05;
+                if (chosenVoice) utter.voice = chosenVoice;
+                utter.onend = () => {{
+                    if (!synth.paused) speakFrom(chunkEnd);
+                }};
+                synth.speak(utter);
+            }}
+
+            function startReading() {{
+                chosenVoice = pickFemaleVoice();
+                speakFrom(0);
+            }}
+
+            if (synth.getVoices().length > 0) {{
+                startReading();
+            }} else {{
+                synth.onvoiceschanged = () => startReading();
+            }}
+
+            function togglePlayPause() {{
+                if (synth.paused) {{
+                    synth.resume();
+                    playPauseBtn.innerText = "⏸️ Pause Reading";
+                    status.innerText = "🔊 Speaking...";
+                }} else if (synth.speaking) {{
+                    synth.pause();
+                    playPauseBtn.innerText = "▶️ Resume Reading";
+                    status.innerText = "⏸️ Paused";
+                }}
+            }}
+        </script>
+        """
 
     if btn_simplify:
         if st.session_state.extracted_text and st.session_state.extracted_text.strip():
@@ -998,8 +1146,6 @@ else:
     <div class="content-stats">
         <div class="stat-chip">📄 <b>{word_count:,}</b> words extracted</div>
         <div class="stat-chip">✨ Simplified: <b>{"Ready" if simplified_ready else "Not yet"}</b></div>
-        <div class="stat-chip">🔤 Font <b>{st.session_state.get('font_size', 22)}px</b></div>
-        <div class="stat-chip">↕️ Spacing <b>{st.session_state.get('line_spacing', 1.8)}</b></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1010,9 +1156,12 @@ else:
     with tab1:
         st.markdown('<div class="reading-container">', unsafe_allow_html=True)
         if st.session_state.simplified_text:
-            st.markdown('<div class="badge">AI Output</div>', unsafe_allow_html=True)
-            parsed_html = markdown.markdown(st.session_state.simplified_text)
-            st.markdown(f'<div class="reading-pane" style="{custom_text_style}">{parsed_html}</div>', unsafe_allow_html=True)
+            if st.session_state.get('is_reading'):
+                components.html(build_reader_html(st.session_state.simplified_text), height=520, scrolling=True)
+            else:
+                st.markdown('<div class="badge">AI Output</div>', unsafe_allow_html=True)
+                parsed_html = markdown.markdown(st.session_state.simplified_text)
+                st.markdown(f'<div class="reading-pane" style="{custom_text_style}">{parsed_html}</div>', unsafe_allow_html=True)
         else:
             st.info("Upload a PDF and click '✨ Simplify Text' to generate a neurodivergent-friendly version.")
         st.markdown('</div>', unsafe_allow_html=True)
