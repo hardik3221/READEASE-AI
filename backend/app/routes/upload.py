@@ -11,7 +11,9 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     try:
         pdf_bytes = await file.read()
-        text = extract_text_from_pdf_bytes(pdf_bytes)
+        
+        # 🚨 THE FIX: You MUST have 'await' right here because the PDF service is now async!
+        text = await extract_text_from_pdf_bytes(pdf_bytes)
         
         if not text:
             raise HTTPException(

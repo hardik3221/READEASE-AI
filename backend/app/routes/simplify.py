@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.services.ai_service import simplify_text, extract_vocabulary
@@ -11,13 +12,13 @@ class SimplifyPayload(BaseModel):
 @router.post("/simplify")
 async def simplify_endpoint(payload: SimplifyPayload):
     try:
-        # 1. Run the summarization
-        simplified = await simplify_text(payload.text)
+        # Run BOTH AI calls at the exact same time using asyncio.gather
+        # This instantly cuts your processing time in half!
+        simplified, vocab = await asyncio.gather(
+            simplify_text(payload.text),
+            extract_vocabulary(payload.text)
+        )
         
-        # 2. Run the real vocabulary extraction
-        vocab = await extract_vocabulary(payload.text)
-        
-        # 3. Return both to the frontend
         return {
             "simplified_text": simplified,
             "vocabulary": vocab

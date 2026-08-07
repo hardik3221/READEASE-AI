@@ -63,8 +63,8 @@ border_color = "#2D303E"
 # Paper tokens — used anywhere the user is actually *reading*, so the
 # product's core transformation (dense text -> calm text) is visible in
 # the UI itself, not just described by it.
-paper_bg = "#B3E4CC"      # warm cream page
-paper_ink = "#2A241C"       # ink on paper
+paper_bg = "#0A2317"      # warm cream page
+paper_ink = "#EBE9E7"       # ink on paper
 paper_border = "#E4D8B8"    # page edge
 paper_accent = "#00E5FF"    # terracotta — emphasis on paper (contrast-safe)
 
