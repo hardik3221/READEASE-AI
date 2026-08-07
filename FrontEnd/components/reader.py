@@ -23,27 +23,27 @@ def build_reader_html(text_to_read: str) -> str:
             font-family: 'OpenDyslexic', sans-serif;
             background-color: {paper_bg};
             color: {paper_ink};
-            padding: 28px 32px;
-            border-radius: 6px 12px 12px 6px;
+            padding: 12px 14px;
+            border-radius: 3px 5px 5px 3px;
             border: 1px solid {paper_border};
-            box-shadow: 0 14px 30px rgba(0,0,0,0.35), inset 0 0 0 1px {paper_border};
+            box-shadow: 0 6px 14px rgba(0,0,0,0.35), inset 0 0 0 1px {paper_border};
         }}
         .reader-page::after {{
             content: ''; position: absolute; top: 0; right: 0; width: 0; height: 0;
-            border-style: solid; border-width: 0 22px 22px 0;
+            border-style: solid; border-width: 0 10px 10px 0;
             border-color: transparent #DCCEA4 transparent transparent;
-            filter: drop-shadow(-2px 2px 3px rgba(0,0,0,0.18));
+            filter: drop-shadow(-1px 1px 2px rgba(0,0,0,0.18));
         }}
         .reader-badge {{
             display: inline-block; background-color: rgba(0,229,255,0.14); color: #0E7490;
-            padding: 4px 12px; border-radius: 15px; font-size: 0.75rem; font-weight: 700;
-            letter-spacing: 0.03em; margin-bottom: 16px; font-family: 'OpenDyslexic', sans-serif;
+            padding: 2px 5px; border-radius: 7px; font-size: 0.35rem; font-weight: 700;
+            letter-spacing: 0.03em; margin-bottom: 8px; font-family: 'OpenDyslexic', sans-serif;
         }}
-        .highlight {{ background-color: {cyan_color}; color: #0E1117; font-weight: bold; border-radius: 4px; padding: 2px 4px; box-shadow: 0 0 8px rgba(0,229,255,0.5); transition: background-color 0.1s ease; }}
-        #progress-container {{ width: 100%; background-color: {paper_border}; border-radius: 8px; margin-bottom: 18px; height: 10px; overflow: hidden; }}
+        .highlight {{ background-color: {cyan_color}; color: #0E1117; font-weight: bold; border-radius: 2px; padding: 1px 2px; box-shadow: 0 0 4px rgba(0,229,255,0.5); transition: background-color 0.1s ease; }}
+        #progress-container {{ width: 100%; background-color: {paper_border}; border-radius: 4px; margin-bottom: 8px; height: 4px; overflow: hidden; }}
         #progress-bar {{ width: 0%; height: 100%; background-color: {accent_color}; transition: width 0.1s linear; }}
-        .controls {{ margin-bottom: 20px; display: flex; gap: 15px; align-items: center; font-family: 'OpenDyslexic', sans-serif; }}
-        button {{ background-color: {cyan_color}; color: #0E1117; border: none; padding: 8px 16px; border-radius: 20px; font-family: 'OpenDyslexic', sans-serif; font-weight: bold; cursor: pointer; transition: 0.2s; }}
+        .controls {{ margin-bottom: 8px; display: flex; gap: 6px; align-items: center; font-family: 'OpenDyslexic', sans-serif; }}
+        button {{ background-color: {cyan_color}; color: #0E1117; border: none; padding: 4px 8px; border-radius: 9px; font-family: 'OpenDyslexic', sans-serif; font-weight: bold; cursor: pointer; transition: 0.2s; }}
         button:hover {{ background-color: {accent_color}; }}
         #status {{ font-family: 'OpenDyslexic', sans-serif; }}
     </style>
@@ -55,7 +55,7 @@ def build_reader_html(text_to_read: str) -> str:
             <button id="play-pause-btn" onclick="togglePlayPause()">⏸️ Pause Reading</button>
             <span id="status" style="color: #4E7A67; font-weight: bold;">🔊 Speaking...</span>
         </div>
-        <div id="text-display" style="font-size: {st.session_state.get('font_size', 22)}px; line-height: {st.session_state.get('line_spacing', 1.8)};"></div>
+        <div id="text-display" style="font-size: {st.session_state.get('font_size', 15)}px; line-height: {st.session_state.get('line_spacing', 1.8)};"></div>
     </div>
 
     <script>

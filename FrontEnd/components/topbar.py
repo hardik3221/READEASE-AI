@@ -13,8 +13,7 @@ def render_topbar():
     st.markdown(f"""
     <div class="ws-topbar">
         <div>
-            <div class="ws-greeting-eyebrow">Workspace</div>
-            <h2 class="ws-greeting-title">Welcome back, {st.session_state.username.lower()}</h2>
+            <h2 class="ws-greeting-title">Welcome back, {st.session_state.username.title()}</h2>
         </div>
         <div class="ws-doc-chip">
             <div class="dot">{doc_icon}</div>

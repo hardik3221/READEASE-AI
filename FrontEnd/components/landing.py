@@ -7,47 +7,20 @@ def render_landing(logo_src):
     st.markdown(f"""
         <style>
             #smooth-logo-bg {{
-                position: fixed;
+                position: absolute;
                 top: 0;
                 left: 0;
-                width: 100vw;
-                height: 100vh;
-                background: linear-gradient(rgba(14, 17, 23, 0.74), rgba(14, 17, 23, 0.85)), url('{logo_src}');
+                width: 100%;
+                height: 480px; /* Anchors the image specifically to the hero section */
+                background: linear-gradient(to bottom, rgba(14, 17, 23, 0.4) 0%, rgba(14, 17, 23, 1) 100%), url('{logo_src}');
                 background-size: cover;
                 background-position: center;
                 pointer-events: none;
                 z-index: 0;
-                opacity: 0.85;
-                transition: opacity 0.8s ease-in-out;
-            }}
-            #smooth-logo-bg.hidden-bg {{
-                opacity: 0 !important;
             }}
         </style>
         
         <div id="smooth-logo-bg"></div>
-        
-        <script>
-            (function() {{
-                const bgDiv = document.getElementById("smooth-logo-bg");
-                const targetWin = window.parent !== window ? window.parent : window;
-                
-                function handleScroll() {{
-                    const scrollPos = targetWin.scrollY || window.scrollY || document.documentElement.scrollTop || 0;
-                    if (bgDiv) {{
-                        if (scrollPos > 40) {{
-                            bgDiv.classList.add("hidden-bg");
-                        }} else {{
-                            bgDiv.classList.remove("hidden-bg");
-                        }}
-                    }}
-                }}
-                
-                targetWin.addEventListener('scroll', handleScroll, {{ passive: true }});
-                window.addEventListener('scroll', handleScroll, {{ passive: true }});
-                handleScroll();
-            }})();
-        </script>
     """, unsafe_allow_html=True)
 
     top_bar_container = st.container()
@@ -59,16 +32,16 @@ def render_landing(logo_src):
                     top: 0;
                     left: 0;
                     width: 100%;
-                    height: 80px;
+                    height: 48px;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 0 50px;
+                    padding: 0 30px;
                     background-color: rgba(14, 17, 23, 0.45);
                     backdrop-filter: blur(16px);
                     -webkit-backdrop-filter: blur(16px);
                     border-bottom: 1px solid rgba(51, 47, 63, 0.4);
-                    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+                    box-shadow: 0 2px 18px rgba(0, 0, 0, 0.15);
                     z-index: 999999;
                 }}
                 .nav-left-side {{
@@ -77,10 +50,10 @@ def render_landing(logo_src):
                 }}
                 .nav-brand-title {{
                     font-family: 'OpenDyslexic', 'Fraunces', Georgia, serif;
-                    font-size: 2.1rem;
+                    font-size: 1.26rem;
                     font-weight: 700;
                     font-style: italic;
-                    letter-spacing: 0.5px;
+                    letter-spacing: 0.3px;
                     background: linear-gradient(135deg, #FFFFFF 30%, #00E5FF 100%);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
@@ -88,20 +61,20 @@ def render_landing(logo_src):
                 .nav-login-link {{
                     background-color: transparent;
                     color: #00E5FF !important;
-                    border: 1.5px solid #00E5FF;
-                    padding: 8px 24px;
-                    border-radius: 25px;
+                    border: 1px solid #00E5FF;
+                    padding: 5px 14px;
+                    border-radius: 15px;
                     text-decoration: none !important;
                     font-family: 'OpenDyslexic', 'Figtree', sans-serif;
-                    font-size: 1rem;
+                    font-size: 0.6rem;
                     font-weight: 600;
                     transition: all 0.25s ease;
                 }}
                 .nav-login-link:hover {{
                     background-color: #00E5FF;
                     color: #0E1117 !important;
-                    box-shadow: 0 0 18px rgba(0, 229, 255, 0.5);
-                    transform: translateY(-2px);
+                    box-shadow: 0 0 11px rgba(0, 229, 255, 0.5);
+                    transform: translateY(-1px);
                 }}
             </style>
             <div class="custom-top-bar">
@@ -114,9 +87,9 @@ def render_landing(logo_src):
             </div>
         """, unsafe_allow_html=True)
         
-    st.markdown("<div style='height: 90px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 54px;'></div>", unsafe_allow_html=True)
 
-    hero_col1, hero_col2 = st.columns([1.05, 1], gap="large")
+    hero_col1, hero_col2 = st.columns([1.05, 1], gap="medium")
     with hero_col1:
         st.markdown("""
         <div class="hero-copy">
@@ -143,12 +116,12 @@ def render_landing(logo_src):
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<div style='height: 50px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
     st.markdown("---")
-    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
 
-    st.markdown("<h2 style='margin-bottom: 6px;'>Built for neurodivergent minds</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #9AA0A6; margin-bottom: 26px;'>Three things happen to your document the moment it lands in Readora.</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='margin-bottom: 4px;'>Built for neurodivergent minds</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #9AA0A6; margin-bottom: 16px;'>Three things happen to your document the moment it lands in Readora.</p>", unsafe_allow_html=True)
 
     st.markdown("""
     <div class="feature-grid">
@@ -170,10 +143,10 @@ def render_landing(logo_src):
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div style='height: 60px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
 
-    st.markdown('<div id="login-section" style="padding-top: 60px; margin-top: -60px;"></div>', unsafe_allow_html=True)
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+    st.markdown('<div id="login-section" style="padding-top: 36px; margin-top: -36px;"></div>', unsafe_allow_html=True)
+    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
     _, auth_col, _ = st.columns([1, 1.1, 1])
     with auth_col:
@@ -195,6 +168,7 @@ def render_landing(logo_src):
                     if verify_user(log_user, log_pass):
                         st.session_state.logged_in = True
                         st.session_state.username = log_user
+                        st.session_state.scroll_to_top = True
                         st.rerun()
                     else:
                         st.toast("Invalid credentials. Please try again.", icon="🚨")
@@ -204,7 +178,7 @@ def render_landing(logo_src):
                         create_user(log_user, log_pass)
                         st.toast("Account created! You can now log in.", icon="✅")
         
-            st.markdown("<div style='text-align: center; margin: 20px 0; color: #5A5E73; font-size: 0.9rem;'>OR</div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align: center; margin: 12px 0; color: #5A5E73; font-size: 0.54rem;'>OR</div>", unsafe_allow_html=True)
         
             if st.button("🌐 Continue with Google", use_container_width=True):
                 st.toast("Google OAuth integration coming soon!", icon="ℹ️")

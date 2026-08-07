@@ -1,23 +1,71 @@
 import base64
-
 import streamlit as st
-
+import streamlit.components.v1 as components
 from database import get_user_documents
 
 
 def render_sidebar():
+    if 'font_size' not in st.session_state:
+        st.session_state.font_size = 15
+    if 'line_spacing' not in st.session_state:
+        st.session_state.line_spacing = 1.8
+
     with st.sidebar:
+        display_name = st.session_state.username.title() if st.session_state.username else "User"
+        initial = display_name[0].upper()
+
+        # --- 1. TOP: READORA AI BRAND ---
         st.markdown("""
-        <div class="sb-brand">
-            <div class="logo-dot"></div>
-            <span class="name">Readora AI</span>
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <div class="logo-dot" style="width:12px; height:12px; border-radius:50%; background: linear-gradient(135deg, #00E5FF, #69F0AE); flex-shrink:0;"></div>
+            <span style="font-family:'OpenDyslexic', 'Fraunces', Georgia, serif; font-style: italic; font-weight:700; font-size:13px; color:#FFFFFF;">Readora AI</span>
         </div>
         """, unsafe_allow_html=True)
 
+        # --- 2. DIRECTLY BELOW: PROFILE BUTTON ---
+        with st.popover(initial, use_container_width=True, help="Account Settings"):
+            st.markdown("⚙️ **Account**")
+            
+            if st.session_state.get('profile_photo'):
+                b64_img = base64.b64encode(st.session_state.profile_photo).decode()
+                st.markdown(f'<div style="text-align: center; margin-bottom: 10px;"><img src="data:image/jpeg;base64,{b64_img}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover;"></div>', unsafe_allow_html=True)
+                if st.button("🗑️ Delete Photo", use_container_width=True):
+                    st.session_state.profile_photo = None
+                    st.rerun()
+            else:
+                uploaded_img = st.file_uploader("Upload Profile Photo", type=["jpg", "png", "jpeg"])
+                if uploaded_img:
+                    st.session_state.profile_photo = uploaded_img.getvalue()
+                    st.rerun()
+
+            st.info(f"User: {display_name}\n\nPlan: Free")
+            
+            if st.button("🚪 Log Out", use_container_width=True, type="primary"):
+                st.session_state.logged_in = False
+                st.rerun()
+
+        if st.session_state.get('profile_photo'):
+            b64_trigger = base64.b64encode(st.session_state.profile_photo).decode()
+            avatar_js = f"""
+            <script>
+                setTimeout(function() {{
+                    const doc = window.parent.document;
+                    doc.querySelectorAll('[data-testid="stPopover"] button').forEach(btn => {{
+                        if (btn.innerText.trim() === "{initial}") {{
+                            btn.innerHTML = '<img src="data:image/jpeg;base64,{b64_trigger}" style="width: 18px; height: 18px; border-radius: 50%; object-fit: cover; display: block; margin: auto;">';
+                        }}
+                    }});
+                }}, 50);
+            </script>
+            """
+            components.html(avatar_js, height=0)
+
+        st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
         st.text_input("Search", placeholder="🔍 Search documents...", label_visibility="collapsed")
 
-        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
-        if st.button("✨ New Chat Session", use_container_width=True, type="primary"):
+        st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
+        
+        if st.button("✨ New Chat", use_container_width=True, type="primary"):
             st.session_state.extracted_text = ""
             st.session_state.simplified_text = ""
             st.session_state.last_uploaded_file = None
@@ -29,16 +77,16 @@ def render_sidebar():
 
         user_history = get_user_documents(st.session_state.username)
 
-        with st.container(height=280):
+        with st.container(height=160):
             if not user_history:
-                st.markdown("<span style='color: #5A5E73; font-size: 0.85rem;'>No documents yet — upload a PDF to get started.</span>", unsafe_allow_html=True)
+                st.markdown("<span style='color: #5A5E73; font-size: 0.4rem;'>No documents yet — upload a PDF to get started.</span>", unsafe_allow_html=True)
             else:
                 for doc in user_history:
                     doc_id, doc_name, orig_text, simp_text = doc
-                    display_name = (doc_name[:22] + '…') if len(doc_name) > 22 else doc_name
+                    display_name_doc = (doc_name[:22] + '…') if len(doc_name) > 22 else doc_name
                     is_active = st.session_state.get('current_doc_id') == doc_id
                     icon = "🟢" if is_active else "📄"
-                    if st.button(f"{icon} {display_name}", key=f"hist_{doc_id}", use_container_width=True):
+                    if st.button(f"{icon} {display_name_doc}", key=f"hist_{doc_id}", use_container_width=True):
                         st.session_state.current_doc_id = doc_id
                         st.session_state.last_uploaded_file = doc_name
                         st.session_state.extracted_text = orig_text
@@ -46,56 +94,8 @@ def render_sidebar():
                         st.session_state.is_reading = False
                         st.rerun()
 
-        with st.expander("🔤 Visual Settings", expanded=False):
-            st.session_state.font_size = st.slider("Font Size", 14, 48, st.session_state.get('font_size', 22))
-            st.session_state.line_spacing = st.slider("Line Spacing", 1.0, 4.0, st.session_state.get('line_spacing', 1.8), step=0.1)
-
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
-        initial = st.session_state.username[0].upper() if st.session_state.username else "U"
-        if st.session_state.get('profile_photo'):
-            b64_img = base64.b64encode(st.session_state.profile_photo).decode()
-            avatar_html = f'<img src="data:image/jpeg;base64,{b64_img}" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover;">'
-        else:
-            avatar_html = f'<div style="width: 34px; height: 34px; border-radius: 50%; background-color: #00E5FF; color: #0E1117; display: flex; justify-content: center; align-items: center; font-weight: 700; font-family: \'OpenDyslexic\', \'Figtree\', sans-serif; font-size: 14px; flex-shrink:0;">{initial}</div>'
-
-        display_name = st.session_state.username.lower() if st.session_state.username else "user"
-
-        st.markdown(f"""
-        <div class="sb-profile-card">
-            {avatar_html}
-            <div style="line-height: 1.15; flex:1;">
-                <div style="font-weight: 600; color: #E0E0E0; font-size: 13.5px;">{display_name}</div>
-                <div style="font-size: 11px; color: #00E5FF;">Free Plan</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        pop_col, log_col = st.columns([7, 3])
-        with pop_col:
-            with st.popover("⚙️ Settings & Profile", use_container_width=True):
-                st.markdown("##### Account Settings")
-                m_tab1, m_tab2 = st.tabs(["👤 Profile", "❓ Help"])
-
-                with m_tab1:
-                    if st.session_state.get('profile_photo'):
-                        b64_img = base64.b64encode(st.session_state.profile_photo).decode()
-                        st.markdown(f'<img src="data:image/jpeg;base64,{b64_img}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;">', unsafe_allow_html=True)
-                        if st.button("🗑️ Delete Photo", use_container_width=True):
-                            st.session_state.profile_photo = None
-                            st.rerun()
-                    else:
-                        uploaded_img = st.file_uploader("Upload Profile Photo", type=["jpg", "png", "jpeg"])
-                        if uploaded_img:
-                            st.session_state.profile_photo = uploaded_img.getvalue()
-                            st.rerun()
-
-                    st.text_input("Name")
-                    st.text_input("Surname")
-                    st.text_area("Preferences for AI", placeholder="E.g., Keep sentences short, I prefer bullets...")
-
-                with m_tab2:
-                    st.info("Support: help@readora.ai")
-        with log_col:
-            st.button("🚪 Out", use_container_width=True, help="Log Out",
-                       on_click=lambda: st.session_state.update(logged_in=False))
+        with st.expander("🔤 Visual Settings", expanded=False):
+            st.slider("Font Size", 10, 40, key='font_size')
+            st.slider("Line Spacing", 1.0, 4.0, step=0.1, key='line_spacing')
