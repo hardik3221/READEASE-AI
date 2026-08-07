@@ -24,7 +24,7 @@ def main():
         sys.exit(1)
 
     # 2. Start Streamlit Frontend
-    frontend_cmd = [sys.executable, "-m", "streamlit", "run", "FrontEnd/abc.py"]
+    frontend_cmd = [sys.executable, "-m", "streamlit", "run", "FrontEnd/app.py"]
     print("-> Launching Streamlit Frontend...")
     frontend_process = subprocess.Popen(frontend_cmd, cwd=root_dir, env=env)
 
