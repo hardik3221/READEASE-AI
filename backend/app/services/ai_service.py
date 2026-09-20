@@ -46,7 +46,7 @@ async def process_chunk(chunk: str, system_content: str, retries=3) -> str:
             client = get_groq_client()
             try:
                 response = await client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
+                    model="openai/gpt-oss-20b",
                     messages=[
                         {"role": "system", "content": system_content},
                         {"role": "user", "content": chunk}
@@ -122,7 +122,7 @@ async def extract_vocabulary(text: str) -> str:
 
     try:
         response = await client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             messages=[
                 {
                     "role": "system",
