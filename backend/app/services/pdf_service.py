@@ -38,7 +38,7 @@ async def ocr_page_async(page_num: int, base64_image: str) -> str:
             client = get_async_groq_client()
             try:
                 vision_completion = await client.chat.completions.create(
-                    model="qwen/qwen3.6-27b",
+                    model="qwen/qwen3.8-27b",
                     messages=[
                         {
                             "role": "user",
